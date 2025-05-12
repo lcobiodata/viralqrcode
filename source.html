@@ -740,7 +740,8 @@
   <script>
     // let html = "data:text/html," + encodeURIComponent(document.documentElement.outerHTML);
     // let html = "data:text/html," + encodeURIComponent("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body>HELLO WORLD</body></html>")
-    let html = "data:text/html,<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body>HELLO WORLD</body></html>"
+    // let html = "data:text/html,<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body>HELLO WORLD</body></html>"
+    let html = "data:text/html;charset=UTF-8,<!DOCTYPE html><html></head><body>HELLO WORLD</body></html>"
     new QRCode(document.getElementById("qrcode"), {
       text: html,
       correctLevel: QRCode.CorrectLevel.L
