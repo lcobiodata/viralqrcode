@@ -28,7 +28,7 @@
 <body>
   <canvas id="bitmap"></canvas>
   <div id="preview"></div>
-
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script>
     const canvas = document.getElementById("bitmap");
     let API_URL = "";
@@ -41,17 +41,6 @@
   
       API_URL = cfg.API_URL;
       METADATA_BASE_URL = cfg.METADATA_BASE_URL;
-  
-      await new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = cfg.QR_LIB_URL;
-        script.onload = () => {
-          QRCode = window.QRCode;
-          resolve();
-        };
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
     }
   
     function renderQRCode(text) {
