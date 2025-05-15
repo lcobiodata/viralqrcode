@@ -5,7 +5,7 @@ A self-replicating QR code that spreads like a digital pandemic. Scan one code, 
 ![image](https://github.com/user-attachments/assets/e68c96c1-9b5c-4f22-b4a8-9cf294cfdd9b)
 
 
-# 🧬 Viral QR NFT System — From Zero to Hero
+## 🧬 Viral QR NFT System — From Zero to Hero
 
 > A beginner-friendly system that turns your visitors into NFT miners.
 > Powered by QR codes, GitHub, IPFS, and OpenSea. No gas fees.
