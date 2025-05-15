@@ -1,5 +1,5 @@
 {
-  "API_URL": "https://viralqrcode.vercel.app/api/trigger",
+  "API_URL": "https://viralqrcode-git-v0-viralqrcode.vercel.app/api/trigger",
   "GITHUB_REPO_API": "https://api.github.com/repos/lcobiodata/viralqrcode/dispatches",
   "METADATA_BASE_URL": "https://raw.githubusercontent.com/lcobiodata/viralqrcode/main/metadata/"
 }
