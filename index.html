@@ -5,45 +5,133 @@
   <title>Viral QR Code</title>
   <style>
     body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
       background: #121212;
+      color: #00FF00;
+      margin: 0;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
     }
     canvas {
       image-rendering: pixelated;
       border: none;
     }
+    img {
+      width: 256px;
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
   <canvas id="bitmap"></canvas>
+  <div id="preview"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script>
-    window.onload = () => {
-      const canvas = document.getElementById("bitmap");
-      QRCode.toCanvas(
-        canvas,
-        window.location.href,
-        {
-          // width: 256,
+    const canvas = document.getElementById("bitmap");
+
+    function renderQRCode(text) {
+      return new Promise((resolve, reject) => {
+        QRCode.toCanvas(canvas, text, {
           margin: 2,
           color: { dark: "#00FF00", light: "#121212" }
-        },
-        function (error) {
-          if (error) console.error(error);
-          else {
-            setTimeout(() => {
-              const link = document.createElement("a");
-              link.download = "viralqrcode.png";
-              link.href = canvas.toDataURL("image/png");
-              link.click();
-            }, 200);
-          }
-        }
-      );
+        }, err => err ? reject(err) : resolve());
+      });
+    }
+
+    function downloadCanvas(filename = "viralqrcode") {
+      const link = document.createElement("a");
+      link.download = `${filename}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    async function toBase64(canvas) {
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+      const ab = await blob.arrayBuffer();
+      return btoa(String.fromCharCode(...new Uint8Array(ab)));
+    }
+
+    async function sendToProxy(base64, forkId) {
+      await fetch("/api/trigger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ png_base64: base64, fork_id: forkId })
+      });
+    }
+
+    async function pollForMetadata(forkId, tries = 30, delay = 3000) {
+      const url = `https://raw.githubusercontent.com/lcobiodata/viralqrcode/main/metadata/fork-${forkId}.json`;
+      for (let i = 0; i < tries; i++) {
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (res.ok) return await res.json();
+        } catch {}
+        await new Promise(r => setTimeout(r, delay));
+      }
+      throw new Error("Timeout: metadata not found.");
+    }
+
+    async function fetchAndRenderParent(cid) {
+      const metaUrl = `https://ipfs.io/ipfs/${cid}`;
+      const res = await fetch(metaUrl);
+      if (!res.ok) return;
+      const metadata = await res.json();
+      const image = metadata.image?.replace("ipfs://", "https://ipfs.io/ipfs/");
+      const preview = document.getElementById("preview");
+
+      preview.innerHTML = `
+        <img src="${image}" alt="NFT image">
+        <h3>${metadata.name}</h3>
+        <p>${metadata.description}</p>
+        <a href="https://ipfs.io/ipfs/${cid}" target="_blank">View metadata</a>
+      `;
+    }
+
+    window.onload = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const parentCID = params.get("cid");
+
+      if (!parentCID) {
+        // 🟢 No cid: fallback simple QR-only mode (easter egg hidden)
+        await renderQRCode(window.location.href);
+        setTimeout(() => downloadCanvas("viralqrcode"), 200);
+        return;
+      }
+
+      // 🟡 cid present: unlock viral minting behavior
+      await fetchAndRenderParent(parentCID);
+
+      // Step 1: render parent QR
+      await renderQRCode(window.location.href);
+      const base64 = await toBase64(canvas);
+      const forkId = crypto.randomUUID();
+
+      // Step 2: send to proxy
+      await sendToProxy(base64, forkId);
+
+      // Step 3: wait for metadata
+      const metadata = await pollForMetadata(forkId);
+
+      // Step 4: build new payload URL with full metadata
+      const imageCID = metadata.image.replace("ipfs://", "");
+      const qrURL = `${location.origin}${location.pathname}?` + new URLSearchParams({
+        cid: imageCID,
+        name: metadata.name,
+        desc: metadata.description,
+        creator: metadata.creator,
+        license: metadata.license,
+        timestamp: metadata.attributes.find(a => a.trait_type === "Timestamp")?.value,
+        client_ip: metadata.attributes.find(a => a.trait_type === "Client IP")?.value,
+        parent: parentCID
+      });
+
+      // Step 5: render next-gen QR and download it
+      await renderQRCode(qrURL);
+      downloadCanvas(imageCID);
     };
   </script>
 </body>
