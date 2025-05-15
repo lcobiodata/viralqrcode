@@ -1,0 +1,84 @@
+name: Upload QR NFT
+
+on:
+  repository_dispatch:
+    types: [upload_qr_png]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Decode PNG
+        run: |
+          mkdir -p metadata cids
+          if [[ -z "${{ github.event.client_payload.png_base64 }}" ]]; then
+            echo "Error: Base64 PNG data is missing" >&2
+            exit 1
+          fi
+          echo "${{ github.event.client_payload.png_base64 }}" | base64 --decode > viralqrcode.png
+
+      - name: Upload Image to IPFS
+        run: |
+          curl -X POST https://api.nft.storage/upload \
+            -H "Authorization: Bearer ${{ secrets.NFT_STORAGE_TOKEN }}" \
+            -H "Content-Type: image/png" \
+            --data-binary @viralqrcode.png \
+            -o image.json || { echo "Image upload failed"; exit 1; }
+          IMAGE_CID=$(jq -r '.value.cid' image.json)
+          if [[ -z "$IMAGE_CID" ]]; then
+            echo "Error: Failed to retrieve IMAGE_CID" >&2
+            exit 1
+          fi
+          echo "IMAGE_CID=$IMAGE_CID" >> $GITHUB_ENV
+
+      - name: Generate Metadata
+        env:
+          IMAGE_CID: ${{ env.IMAGE_CID }}
+          CLIENT_IP: ${{ github.event.client_payload.client_ip }}
+          TIMESTAMP: ${{ github.event.client_payload.timestamp }}
+        run: |
+          cat <<EOF > metadata.json
+          {
+            "name": "Viral QR NFT",
+            "description": "Minted by $CLIENT_IP on $TIMESTAMP",
+            "image": "ipfs://$IMAGE_CID",
+            "attributes": [
+              { "trait_type": "Client IP", "value": "$CLIENT_IP" },
+              { "trait_type": "Timestamp", "value": "$TIMESTAMP" }
+            ]
+          }
+          EOF
+
+      - name: Upload Metadata to IPFS
+        run: |
+          curl -X POST https://api.nft.storage/upload \
+            -H "Authorization: Bearer ${{ secrets.NFT_STORAGE_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            --data-binary @metadata.json \
+            -o meta.json || { echo "Metadata upload failed"; exit 1; }
+          META_CID=$(jq -r '.value.cid' meta.json)
+          if [[ -z "$META_CID" ]]; then
+            echo "Error: Failed to retrieve META_CID" >&2
+            exit 1
+          fi
+          echo "META_CID=$META_CID" >> $GITHUB_ENV
+
+      - name: Save Files
+        run: |
+          cp metadata.json metadata/fork-${{ github.event.client_payload.fork_id }}.json
+          echo "{ \"cid\": \"$META_CID\" }" > cids/fork-${{ github.event.client_payload.fork_id }}.json
+
+      - name: Commit
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git add metadata/ cids/
+          git commit -m "Fork ${{ github.event.client_payload.fork_id }}"
+          git push
+
+      - name: Cleanup
+        run: |
+          rm -f viralqrcode.png image.json meta.json metadata.json
