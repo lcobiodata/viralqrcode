@@ -36,15 +36,21 @@ jobs:
 
       - name: Generate Metadata
         env:
-          IMAGE_CID: ${{ env.IMAGE_CID }}
           CLIENT_IP: ${{ github.event.client_payload.client_ip }}
           TIMESTAMP: ${{ github.event.client_payload.timestamp }}
+          IMAGE_CID: ${{ env.IMAGE_CID }}
+          CREATOR_ADDRESS: ${{ secrets.CREATOR_ADDRESS }}
+          COLLECTION_NAME: ${{ secrets.COLLECTION_NAME }}
+          LICENSE_TEXT: ${{ secrets.LICENSE_TEXT }}
         run: |
           cat <<EOF > metadata.json
           {
             "name": "Viral QR NFT",
             "description": "Minted by $CLIENT_IP on $TIMESTAMP",
             "image": "ipfs://$IMAGE_CID",
+            "creator": "$CREATOR_ADDRESS",
+            "collection": "$COLLECTION_NAME",
+            "license": "$LICENSE_TEXT",
             "attributes": [
               { "trait_type": "Client IP", "value": "$CLIENT_IP" },
               { "trait_type": "Timestamp", "value": "$TIMESTAMP" }
