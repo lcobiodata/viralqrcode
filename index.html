@@ -28,13 +28,31 @@
         this.data = data;
         this.options = options;
       }
-
+    
       render(callback) {
         QRCode.toCanvas(this.canvas, this.data, this.options, (err) => {
           if (err) console.error(err);
           else if (callback) callback();
         });
       }
+    
+      download() {
+        setTimeout(() => {
+          const link = document.createElement("a");
+          link.download = "viralqrcode.png";
+          link.href = this.canvas.toDataURL("image/png");
+          link.click();
+        }, 200);
+      }
+    }
+
+    async function blobToCID(blob) {
+      const buffer = await blob.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+      // Convert hash buffer to hex string
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
     }
 
     class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
@@ -100,9 +118,29 @@
         };
 
         img.onerror = () => {
-          console.error("Failed to load image from IPFS");
-          alert("Failed to load image from IPFS");
+          // Just fallback to plain QR code, no error message or alert
+          new QRCodeRenderer(this.canvas, this.data, {
+            margin: 2,
+            color: {
+              dark: "#00FF00",
+              light: "#121212"
+            }
+          }).render((callback) => this.download());
         };
+      }
+
+      async redirect() {
+        this.canvas.toBlob(async (blob) => {
+          if (blob) {
+            const newCid = await blobToCID(blob);
+            console.log("New CID:", newCid);
+            const newUrl = `${window.location.origin}?cid=${encodeURIComponent(newCid)}&ref=${btoa(this.data)}`;
+            console.log("New URL:", newUrl);
+            // Make a dramatic pause and then redirect to the new URL
+            setTimeout(() => {
+              window.location.href = newUrl;
+            }, 5000);          }
+        }, "image/png");
       }
     }
 
@@ -112,25 +150,17 @@
       const cid = params.get("cid");
       const data = window.location.href;
 
-      const downloadPNG = () => {
-        setTimeout(() => {
-          const link = document.createElement("a");
-          link.download = "viralqrcode.png";
-          link.href = canvas.toDataURL("image/png");
-          link.click();
-        }, 200);
-      };
-
       if (!cid) {
-        new QRCodeRenderer(canvas, data, {
+        const qr = new QRCodeRenderer(canvas, data, {
           margin: 2,
           color: {
             dark: "#00FF00",
             light: "#121212"
           }
-        }).render(downloadPNG);
+        });
+        qr.render(() => qr.download());
       } else {
-        new ImageBackgroundQRCodeRenderer(
+        const qr = new ImageBackgroundQRCodeRenderer(
           canvas,
           data,
           `https://ipfs.io/ipfs/${cid}`,
@@ -141,7 +171,8 @@
               light: '#00000000'
             }
           }
-        ).render(); // Do not call downloadPNG if the canvas is tainted
+        );
+        qr.render(() => qr.redirect());
       }
     };
   </script>
