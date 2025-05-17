@@ -134,7 +134,8 @@
           if (blob) {
             const newCid = await blobToCID(blob);
             console.log("New CID:", newCid);
-            const newUrl = `${window.location.origin}?cid=${encodeURIComponent(newCid)}&src=${encodeURIComponent(this.data)}`;            console.log("New URL:", newUrl);
+            const newUrl = `${window.location.origin}?cid=${encodeURIComponent(newCid)}&ref=${btoa(this.data)}`;
+            console.log("New URL:", newUrl);
             // Make a dramatic pause and then redirect to the new URL
             setTimeout(() => {
               window.location.href = newUrl;
