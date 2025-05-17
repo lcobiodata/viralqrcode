@@ -134,7 +134,7 @@
           if (blob) {
             const newCid = await blobToCID(blob);
             console.log("New CID:", newCid);
-            const newUrl = `${window.location.origin}?id=${encodeURIComponent(newCid)}&src=${encodeURIComponent(this.data)}`;            console.log("New URL:", newUrl);
+            const newUrl = `${window.location.origin}?cid=${encodeURIComponent(newCid)}&src=${encodeURIComponent(this.data)}`;            console.log("New URL:", newUrl);
             // // Redirect to the new URL
             window.location.href = newUrl;
           }
