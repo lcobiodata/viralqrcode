@@ -46,42 +46,50 @@
       render(callback) {
         const ctx = this.canvas.getContext("2d");
         const img = new Image();
+        img.crossOrigin = "anonymous"; // prevent CORS tainting (optional but recommended)
         img.src = this.imageUrl;
 
         img.onload = () => {
-          const maxSize = 3000;
-          const size = Math.max(img.width, img.height);
-          const scale = size > maxSize ? maxSize / size : 1;
-          const width = img.width * scale;
-          const height = img.height * scale;
+          // const maxCanvasSize = 1024;
+          const maxCanvasSize = 512; // 512px for smaller QR codes
+          const imgAspect = img.width / img.height;
+          let width, height;
+
+          if (imgAspect >= 1) {
+            width = maxCanvasSize;
+            height = maxCanvasSize / imgAspect;
+          } else {
+            height = maxCanvasSize;
+            width = maxCanvasSize * imgAspect;
+          }
 
           this.canvas.width = width;
           this.canvas.height = height;
+          this.canvas.style.width = `${width}px`;
+          this.canvas.style.height = `${height}px`;
 
-          const offsetX = (width - img.width * scale) / 2;
-          const offsetY = (height - img.height * scale) / 2;
-
+          // Draw background color
           ctx.fillStyle = "#121212";
           ctx.fillRect(0, 0, width, height);
 
+          // Draw semi-transparent background image
           ctx.globalAlpha = 0.25;
-          ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
+          ctx.drawImage(img, 0, 0, width, height);
           ctx.globalAlpha = 1.0;
 
+          // Draw QR code on top using a temporary canvas
           const tempCanvas = document.createElement("canvas");
           tempCanvas.width = width;
           tempCanvas.height = height;
 
-          const mergedOptions = {
+          QRCode.toCanvas(tempCanvas, this.data, {
             ...this.options,
             width: width,
             color: {
               dark: this.options.color?.dark || '#00FF0077',
               light: '#00000000'
             }
-          };
-
-          QRCode.toCanvas(tempCanvas, this.data, mergedOptions, (err) => {
+          }, (err) => {
             if (err) {
               console.error(err);
             } else {
@@ -133,8 +141,7 @@
               light: '#00000000'
             }
           }
-        // ).render(downloadPNG); // Tainted canvases may not be exported.
-        ).render(); 
+        ).render(); // Do not call downloadPNG if the canvas is tainted
       }
     };
   </script>
