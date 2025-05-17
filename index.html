@@ -22,28 +22,120 @@
   <canvas id="bitmap"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script>
+    class QRCodeRenderer {
+      constructor(canvas, data, options = {}) {
+        this.canvas = canvas;
+        this.data = data;
+        this.options = options;
+      }
+
+      render(callback) {
+        QRCode.toCanvas(this.canvas, this.data, this.options, (err) => {
+          if (err) console.error(err);
+          else if (callback) callback();
+        });
+      }
+    }
+
+    class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
+      constructor(canvas, data, imageUrl, options = {}) {
+        super(canvas, data, options);
+        this.imageUrl = imageUrl;
+      }
+
+      render(callback) {
+        const ctx = this.canvas.getContext("2d");
+        const img = new Image();
+        img.src = this.imageUrl;
+
+        img.onload = () => {
+          const maxSize = 3000;
+          const size = Math.max(img.width, img.height);
+          const scale = size > maxSize ? maxSize / size : 1;
+          const width = img.width * scale;
+          const height = img.height * scale;
+
+          this.canvas.width = width;
+          this.canvas.height = height;
+
+          const offsetX = (width - img.width * scale) / 2;
+          const offsetY = (height - img.height * scale) / 2;
+
+          ctx.fillStyle = "#121212";
+          ctx.fillRect(0, 0, width, height);
+
+          ctx.globalAlpha = 0.25;
+          ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
+          ctx.globalAlpha = 1.0;
+
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = width;
+          tempCanvas.height = height;
+
+          const mergedOptions = {
+            ...this.options,
+            width: width,
+            color: {
+              dark: this.options.color?.dark || '#00FF0077',
+              light: '#00000000'
+            }
+          };
+
+          QRCode.toCanvas(tempCanvas, this.data, mergedOptions, (err) => {
+            if (err) {
+              console.error(err);
+            } else {
+              ctx.drawImage(tempCanvas, 0, 0);
+              if (callback) callback();
+            }
+          });
+        };
+
+        img.onerror = () => {
+          console.error("Failed to load image from IPFS");
+          alert("Failed to load image from IPFS");
+        };
+      }
+    }
+
     window.onload = () => {
       const canvas = document.getElementById("bitmap");
-      QRCode.toCanvas(
-        canvas,
-        window.location.href,
-        {
-          // width: 256,
+      const params = new URLSearchParams(window.location.search);
+      const cid = params.get("cid");
+      const data = window.location.href;
+
+      const downloadPNG = () => {
+        setTimeout(() => {
+          const link = document.createElement("a");
+          link.download = "viralqrcode.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        }, 200);
+      };
+
+      if (!cid) {
+        new QRCodeRenderer(canvas, data, {
           margin: 2,
-          color: { dark: "#00FF00", light: "#121212" }
-        },
-        function (error) {
-          if (error) console.error(error);
-          else {
-            setTimeout(() => {
-              const link = document.createElement("a");
-              link.download = "viralqrcode.png";
-              link.href = canvas.toDataURL("image/png");
-              link.click();
-            }, 200);
+          color: {
+            dark: "#00FF00",
+            light: "#121212"
           }
-        }
-      );
+        }).render(downloadPNG);
+      } else {
+        new ImageBackgroundQRCodeRenderer(
+          canvas,
+          data,
+          `https://ipfs.io/ipfs/${cid}`,
+          {
+            margin: 2,
+            color: {
+              dark: "#00FF0077",
+              light: '#00000000'
+            }
+          }
+        // ).render(downloadPNG); // Tainted canvases may not be exported.
+        ).render(); 
+      }
     };
   </script>
 </body>
