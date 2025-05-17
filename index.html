@@ -99,9 +99,29 @@
           });
         };
 
+        // img.onerror = () => {
+        //   console.error("Failed to load image from IPFS");
+        //   alert("Failed to load image from IPFS");
+        // };
         img.onerror = () => {
-          console.error("Failed to load image from IPFS");
-          alert("Failed to load image from IPFS");
+          console.error("Failed to load image from IPFS, falling back to plain QR code.");
+          // Fallback: render plain QR code
+          new QRCodeRenderer(this.canvas, this.data, {
+            margin: 2,
+            color: {
+              dark: "#00FF00",
+              light: "#121212"
+            }
+          // }).render(callback);
+          }).render(() => {
+            // Download PNG after rendering fallback QR code
+            setTimeout(() => {
+              const link = document.createElement("a");
+              link.download = "viralqrcode.png";
+              link.href = this.canvas.toDataURL("image/png");
+              link.click();
+            }, 200);
+          });
         };
       }
     }
