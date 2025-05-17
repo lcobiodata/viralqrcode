@@ -22,79 +22,118 @@
   <canvas id="bitmap"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script>
-    window.onload = () => {
-      const params = new URLSearchParams(window.location.search);
-      const cid = params.get("cid");
-      if (!cid) {
-        const canvas = document.getElementById("bitmap");
-        QRCode.toCanvas(
-          canvas,
-          window.location.href,
-          {
-            margin: 2,
-            color: { dark: "#00FF00", light: "#121212" }
-          },
-          function (error) {
-            if (error) console.error(error);
-            else {
-              setTimeout(() => {
-                const link = document.createElement("a");
-                link.download = "viralqrcode.png";
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-              }, 200);
-            }
-          }
-        );
-      } else {
-        // If cid is present, render the NFT image
-        const canvas = document.getElementById("bitmap");
-        const ctx = canvas.getContext("2d");
+    class QRCodeRenderer {
+      constructor(canvas, data, options = {}) {
+        this.canvas = canvas;
+        this.data = data;
+        this.options = options;
+      }
+
+      render(callback) {
+        QRCode.toCanvas(this.canvas, this.data, this.options, (err) => {
+          if (err) console.error(err);
+          else if (callback) callback();
+        });
+      }
+    }
+
+    class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
+      constructor(canvas, data, imageUrl, options = {}) {
+        super(canvas, data, options);
+        this.imageUrl = imageUrl;
+      }
+
+      render(callback) {
+        const ctx = this.canvas.getContext("2d");
         const img = new Image();
-        img.src = `https://ipfs.io/ipfs/${cid}`;
+        img.src = this.imageUrl;
+
         img.onload = () => {
-          const maxCanvasSize = 3000; // Set the maximum canvas size
+          const maxSize = 3000;
           const size = Math.max(img.width, img.height);
-          const scale = size > maxCanvasSize ? maxCanvasSize / size : 1;
-          const scaledWidth = img.width * scale;
-          const scaledHeight = img.height * scale;
-        
-          canvas.width = scaledWidth;
-          canvas.height = scaledHeight;
-        
-          const offsetX = (scaledWidth - img.width * scale) / 2;
-          const offsetY = (scaledHeight - img.height * scale) / 2;
-        
-          ctx.fillStyle = "#121212"; // Background color
-          ctx.fillRect(0, 0, scaledWidth, scaledHeight);
-        
-          ctx.globalAlpha = 0.25; // Set transparency level (0.0 to 1.0)
-            ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
-            // Create a temporary canvas for the QR code
-            const tempCanvas = document.createElement("canvas");
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            QRCode.toCanvas(tempCanvas, window.location.href, {
-            margin: 2,
-            width: img.width * scale, // Match the scaled image size
+          const scale = size > maxSize ? maxSize / size : 1;
+          const width = img.width * scale;
+          const height = img.height * scale;
+
+          this.canvas.width = width;
+          this.canvas.height = height;
+
+          const offsetX = (width - img.width * scale) / 2;
+          const offsetY = (height - img.height * scale) / 2;
+
+          ctx.fillStyle = "#121212";
+          ctx.fillRect(0, 0, width, height);
+
+          ctx.globalAlpha = 0.25;
+          ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
+          ctx.globalAlpha = 1.0;
+
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = width;
+          tempCanvas.height = height;
+
+          const mergedOptions = {
+            ...this.options,
+            width: width,
             color: {
-              dark: '#00FF00', // dark areas of the QR code
-              light: '#00000000' // transparent light areas to reveal background
+              dark: this.options.color?.dark || '#00FF0077',
+              light: '#00000000'
             }
-            }, function (error) {
-            if (error) {
-              console.error(error);
+          };
+
+          QRCode.toCanvas(tempCanvas, this.data, mergedOptions, (err) => {
+            if (err) {
+              console.error(err);
             } else {
-              // Draw the QR code from the temporary canvas onto the main canvas
-              ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
-              console.log('QR code with transparent background drawn!');
+              ctx.drawImage(tempCanvas, 0, 0);
+              if (callback) callback();
             }
-            });
+          });
         };
+
         img.onerror = () => {
           console.error("Failed to load image from IPFS");
           alert("Failed to load image from IPFS");
         };
+      }
+    }
+
+    window.onload = () => {
+      const canvas = document.getElementById("bitmap");
+      const params = new URLSearchParams(window.location.search);
+      const cid = params.get("cid");
+      const data = window.location.href;
+
+      const downloadPNG = () => {
+        setTimeout(() => {
+          const link = document.createElement("a");
+          link.download = "viralqrcode.png";
+          link.href = canvas.toDataURL("image/png");
+          link.click();
+        }, 200);
+      };
+
+      if (!cid) {
+        new QRCodeRenderer(canvas, data, {
+          margin: 2,
+          color: {
+            dark: "#00FF00",
+            light: "#121212"
+          }
+        }).render(downloadPNG);
+      } else {
+        new ImageBackgroundQRCodeRenderer(
+          canvas,
+          data,
+          `https://ipfs.io/ipfs/${cid}`,
+          {
+            margin: 2,
+            color: {
+              dark: "#00FF0077",
+              light: '#00000000'
+            }
+          }
+        ).render(downloadPNG);
       }
     };
   </script>
