@@ -68,10 +68,28 @@
           ctx.fillStyle = "#121212"; // Background color
           ctx.fillRect(0, 0, scaledWidth, scaledHeight);
         
-          ctx.globalAlpha = 0.5; // Set transparency level (0.0 to 1.0)
-          ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
-        
-          ctx.globalAlpha = 1.0; // Reset transparency for future drawings
+          ctx.globalAlpha = 0.25; // Set transparency level (0.0 to 1.0)
+            ctx.drawImage(img, offsetX, offsetY, img.width * scale, img.height * scale);
+            // Create a temporary canvas for the QR code
+            const tempCanvas = document.createElement("canvas");
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            QRCode.toCanvas(tempCanvas, window.location.href, {
+            margin: 2,
+            width: img.width * scale, // Match the scaled image size
+            color: {
+              dark: '#00FF00', // dark areas of the QR code
+              light: '#00000000' // transparent light areas to reveal background
+            }
+            }, function (error) {
+            if (error) {
+              console.error(error);
+            } else {
+              // Draw the QR code from the temporary canvas onto the main canvas
+              ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+              console.log('QR code with transparent background drawn!');
+            }
+            });
         };
         img.onerror = () => {
           console.error("Failed to load image from IPFS");
