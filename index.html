@@ -133,7 +133,8 @@
               light: '#00000000'
             }
           }
-        ).render(downloadPNG);
+        // ).render(downloadPNG); // Tainted canvases may not be exported.
+        ).render(); 
       }
     };
   </script>
