@@ -10,18 +10,128 @@
       align-items: center;
       height: 100vh;
       margin: 0;
-      background: #121212;
+      background-color: #121212;
+      font-family: monospace;
+      color: #00FF00;
     }
     canvas {
       image-rendering: pixelated;
       border: none;
     }
+    #privacyModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(18, 18, 18, 0.97);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      max-width: 600px;
+      padding: 2rem;
+      background-color: #121212;
+      border: 1px solid #00FF00;
+      text-align: left;
+      box-shadow: 0 0 20px #00FF00;
+      color: #00FF00;
+    }
+    .modal-content h2 {
+      margin-top: 0;
+    }
+    .modal-content ul {
+      padding-left: 1.2em;
+    }
+    .modal-content button {
+      margin-top: 2rem;
+      padding: 0.5rem 1rem;
+      background-color: #00FF00;
+      color: #121212;
+      font-weight: bold;
+      font-family: monospace;
+      border: none;
+      cursor: pointer;
+    }
+    .modal-content button:hover {
+      background-color: #33FF33;
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/base-58@0.0.1/Base58.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
+  <div id="privacyModal">
+    <div class="modal-content">
+      <h2>Privacy Disclosure</h2>
+      <p>This system collects the following data to generate a unique session-based QR code:</p>
+      <ul>
+        <li>User agent</li>
+        <li>Platform</li>
+        <li>Date and time (ISO format)</li>
+        <li>Time zone</li>
+        <li>Device memory and cores</li>
+        <li>Random session ID</li>
+        <li>Source URL</li>
+        <li>Optional approximate geolocation (only if allowed by user)</li>
+      </ul>
+      <button onclick="closeModalAndGenerate()">Accept & Continue</button>
+    </div>
+  </div>
+
   <canvas id="bitmap"></canvas>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
   <script>
+    function closeModalAndGenerate() {
+      document.getElementById('privacyModal').style.display = 'none';
+      generateQRCode();
+    }
+
+    function getKioskId() {
+      const storageKey = 'kioskId';
+      let id = localStorage.getItem(storageKey);
+      console.log("Kiosk ID from localStorage:", id);
+      // If no ID exists, generate a new one and store it
+      if (!id) {
+        id = Math.random().toString(36).substring(2, 6).toUpperCase();
+        console.log("Generated new Kiosk ID:", id);
+        localStorage.setItem(storageKey, id);
+      }
+      return id;
+    }
+
+    function getClientFingerprint() {
+      return {
+        ua: navigator.userAgent,
+        plat: navigator.platform,
+        cores: navigator.hardwareConcurrency || null,
+        mem: navigator.deviceMemory || null,
+        dt: new Date().toISOString(), // e.g. "2025-05-28T14:23:45.123Z",
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        gen: "kiosk-" + getKioskId(),
+        src: window.location.href,
+        // cid: "QmP8veKKsqBKpQTKEcM8184ZqsQ6oZVdP51MkP6k489eyF"
+      };
+    }
+
+    function getApproximateLocation(callback) {
+      if (!navigator.geolocation) return callback(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          callback({
+            lat: +pos.coords.latitude.toFixed(4),
+            lon: +pos.coords.longitude.toFixed(4),
+            acc: Math.round(pos.coords.accuracy)
+          });
+        },
+        () => callback(null),
+        { maximumAge: 30000, timeout: 5000 }
+      );
+    }
+    
     class QRCodeRenderer {
       constructor(canvas, data, options = {}) {
         this.canvas = canvas;
@@ -36,23 +146,24 @@
         });
       }
     
-      download() {
-        setTimeout(() => {
-          const link = document.createElement("a");
-          link.download = "viralqrcode.png";
-          link.href = this.canvas.toDataURL("image/png");
-          link.click();
-        }, 200);
+      async download() {
+        // Convert canvas to blob and compute SHA-256 hash for filename
+        this.canvas.toBlob(async (blob) => {
+          if (blob) {
+        const buffer = await blob.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        const hashHex = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        const link = document.createElement("a");
+        link.download = `viralqrcode-${hashHex}.png`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        // Optional: revoke object URL after download
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+          }
+        }, "image/png");
       }
-    }
-
-    async function blobToCID(blob) {
-      const buffer = await blob.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-      // Convert hash buffer to hex string
-      return Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
     }
 
     class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
@@ -129,51 +240,115 @@
         };
       }
 
-      async redirect() {
-        this.canvas.toBlob(async (blob) => {
-          if (blob) {
-            const newCid = await blobToCID(blob);
-            console.log("New CID:", newCid);
-            const newUrl = `${window.location.origin}?cid=${encodeURIComponent(newCid)}&ref=${btoa(this.data)}`;
-            console.log("New URL:", newUrl);
-            // Make a dramatic pause and then redirect to the new URL
-            setTimeout(() => {
-              window.location.href = newUrl;
-            }, 5000);          }
-        }, "image/png");
+      // Override download to avoid tainting: render QR code on a fresh canvas (no background)
+      async download() {
+        // Create a fresh canvas (same size as main canvas)
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+
+        // Render QR code only (no background image)
+        QRCode.toCanvas(tempCanvas, this.data, {
+          ...this.options,
+          width: width,
+          color: {
+            dark: '#00FF00',
+            light: '#121212'
+          }
+        }, async (err) => {
+          if (err) {
+            console.error(err);
+            return;
+          }
+          tempCanvas.toBlob(async (blob) => {
+            if (blob) {
+              const buffer = await blob.arrayBuffer();
+              const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+              const hashHex = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+              const link = document.createElement("a");
+              link.download = `viralqrcode-${hashHex}.png`;
+              link.href = URL.createObjectURL(blob);
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+            }
+          }, "image/png");
+        });
       }
     }
 
-    window.onload = () => {
+    function generateQRCode() {
       const canvas = document.getElementById("bitmap");
       const params = new URLSearchParams(window.location.search);
-      const cid = params.get("cid");
-      const data = window.location.href;
+      let data = params.get("data");
+    
+      let cid = null;
+      if (data) {
+        try {
+          const decoded = Base58.decode(data);
+          const decompressed = pako.inflate(decoded, { to: 'string' });
+          const payload = JSON.parse(decompressed);
+          console.log("Decoded Payload:", payload);
+          cid = payload.cid || null;
+        } catch (e) {
+          console.error("Failed to decode or decompress data:", e);
+        }
+      }
+    
+      // Step 1: Gather fingerprint
+      const payload = getClientFingerprint();
+      console.log("Payload to be encoded:", payload);
+    
+      // Step 2: Get location and continue
+      getApproximateLocation((loc) => {
+        if (loc) payload.loc = loc;
+    
+        // Step 3: Stringify and encode
+        let jsonString = JSON.stringify(payload);
+        let compressed = pako.deflate(jsonString);
+        let base58 = Base58.encode(compressed);
+        let qrData = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
+        console.log("QR Code Data:", qrData);
 
-      if (!cid) {
-        const qr = new QRCodeRenderer(canvas, data, {
-          margin: 2,
-          color: {
-            dark: "#00FF00",
-            light: "#121212"
-          }
-        });
-        qr.render(() => qr.download());
-      } else {
-        const qr = new ImageBackgroundQRCodeRenderer(
-          canvas,
-          data,
-          `https://ipfs.io/ipfs/${cid}`,
-          {
-            margin: 2,
-            color: {
-              dark: "#00FF0077",
-              light: '#00000000'
+        // Try to render the QR code, fallback if it fails
+        function renderQR(dataToUse, fallbackTried = false) {
+          try {
+            const qr = !cid
+              ? new QRCodeRenderer(canvas, dataToUse, {
+                  margin: 2,
+                  color: { dark: "#00FF00", light: "#121212" }
+                })
+              : new ImageBackgroundQRCodeRenderer(
+                  canvas,
+                  dataToUse,
+                  `https://ipfs.io/ipfs/${cid}`,
+                  {
+                    margin: 2,
+                    color: { dark: "#00FF0077", light: "#00000000" }
+                  }
+                );
+            qr.render(() => qr.download());
+          } catch (err) {
+            if (!fallbackTried) {
+              // Fallback: minimal payload
+              console.warn("QR code too large or error occurred, falling back to rendering a QR code for the current URL instead.");
+              renderQR(window.location.href, true);
+            } else {
+              // If fallback also fails, log error
+              console.error("Failed to render even the minimal QR code:", err);
             }
           }
-        );
-        qr.render(() => qr.redirect());
-      }
+        }
+    
+        renderQR(qrData);
+      });
+    }
+
+    window.onload = () => {
+      document.getElementById('privacyModal').style.display = 'flex';
     };
   </script>
 </body>
