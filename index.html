@@ -283,14 +283,14 @@
       const params = new URLSearchParams(window.location.search);
       let data = params.get("data");
     
-      let cid = null;
+      let imageUrl = null;
       if (data) {
         try {
           const decoded = Base58.decode(data);
           const decompressed = pako.inflate(decoded, { to: 'string' });
           const payload = JSON.parse(decompressed);
           console.log("Decoded Payload:", payload);
-          cid = payload.cid || null;
+          imageUrl = payload.url || null;
         } catch (e) {
           console.error("Failed to decode or decompress data:", e);
         }
@@ -314,7 +314,7 @@
         // Try to render the QR code, fallback if it fails
         function renderQR(dataToUse, fallbackTried = false) {
           try {
-            const qr = !cid
+            const qr = !imageUrl
               ? new QRCodeRenderer(canvas, dataToUse, {
                   margin: 2,
                   color: { dark: "#00FF00", light: "#121212" }
@@ -322,7 +322,7 @@
               : new ImageBackgroundQRCodeRenderer(
                   canvas,
                   dataToUse,
-                  `https://ipfs.io/ipfs/${cid}`,
+                  imageUrl,
                   {
                     margin: 2,
                     color: { dark: "#00FF0077", light: "#00000000" }
