@@ -278,72 +278,174 @@
       }
     }
 
-    function generateQRCode() {
-      const canvas = document.getElementById("bitmap");
-      const params = new URLSearchParams(window.location.search);
-      let data = params.get("data");
+    async function recursiveDecodeDataUrl(urlOrSearch) {
+      // Accepts either a full URL or just the search/query string
+      if (!urlOrSearch || urlOrSearch === "" || urlOrSearch === "?") return null; // <--- Add this line
     
-      let imageUrl = null;
-      if (data) {
+      let search = urlOrSearch.startsWith('?') ? urlOrSearch : (new URL(urlOrSearch)).search;
+      const params = new URLSearchParams(search);
+
+      // Extract the 'data' parameter      
+      const data = params.get('data');
+      if (!data) return null;
+      
+      try {
+        let jsonString;
+      
+        // Try Base58 first (most common for your QR codes)
         try {
           const decoded = Base58.decode(data);
-          const decompressed = pako.inflate(decoded, { to: 'string' });
-          const payload = JSON.parse(decompressed);
-          console.log("Decoded Payload:", payload);
-          imageUrl = payload.url || null;
+          jsonString = pako.inflate(decoded, { to: 'string' });
+          // If this succeeds, continue as before
         } catch (e) {
-          console.error("Failed to decode or decompress data:", e);
-        }
-      }
-    
-      // Step 1: Gather fingerprint
-      const payload = getClientFingerprint();
-      console.log("Payload to be encoded:", payload);
-      payload.url = window.location.href; // Add current URL to payload
-    
-      // Step 2: Get location and continue
-      getApproximateLocation((loc) => {
-        if (loc) payload.loc = loc;
-    
-        // Step 3: Stringify and encode
-        let jsonString = JSON.stringify(payload);
-        let compressed = pako.deflate(jsonString);
-        let base58 = Base58.encode(compressed);
-        let qrData = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
-        console.log("QR Code Data:", qrData);
-
-        // Try to render the QR code, fallback if it fails
-        function renderQR(dataToUse, fallbackTried = false) {
+          // Not Base58, try Base64 (if you ever use it)
           try {
-            const qr = !imageUrl
-              ? new QRCodeRenderer(canvas, dataToUse, {
-                  margin: 2,
-                  color: { dark: "#00FF00", light: "#121212" }
-                })
-              : new ImageBackgroundQRCodeRenderer(
-                  canvas,
-                  dataToUse,
-                  imageUrl,
-                  {
-                    margin: 2,
-                    color: { dark: "#00FF0077", light: "#00000000" }
-                  }
-                );
-            qr.render(() => qr.download());
-          } catch (err) {
-            if (!fallbackTried) {
-              // Fallback: minimal payload
-              console.warn("QR code too large or error occurred, falling back to rendering a QR code for the current URL instead.");
-              renderQR(window.location.href, true);
+            // Basic Base64 check: only valid chars and length is multiple of 4
+            if (/^[A-Za-z0-9+/=]+$/.test(data) && data.length % 4 === 0) {
+              const decoded = atob(data);
+              // Try decompressing, fallback to plain string
+              try {
+                jsonString = pako.inflate(Uint8Array.from(decoded, c => c.charCodeAt(0)), { to: 'string' });
+              } catch {
+                jsonString = decoded;
+              }
             } else {
-              // If fallback also fails, log error
-              console.error("Failed to render even the minimal QR code:", err);
+              throw new Error('Not Base64');
+            }
+          } catch (e2) {
+            // Not Base64, try URI-decoded JSON
+            try {
+              jsonString = decodeURIComponent(data);
+            } catch (e3) {
+              // As last resort, use as-is
+              jsonString = data;
             }
           }
         }
+      
+        const json = JSON.parse(jsonString);
+      
+        // Check for nested URL
+        const nestedUrl = json.url;
+        if (!nestedUrl) return json;
+        
+        // If IPFS gateway, return this JSON
+        if (typeof nestedUrl === "string" && /^https:\/\/[^\/]+\/ipfs\/[A-Za-z0-9]+/.test(nestedUrl)) {
+          return json;
+        }
+        
+        // If another nested data URL (same origin), recurse
+        if (typeof nestedUrl === "string" && nestedUrl.startsWith(window.location.origin + '?data=')) {
+          const nestedJson = await recursiveDecodeDataUrl(nestedUrl);
+          return { ...json, url: nestedJson };
+        }
+        
+        return json;
+      
+        return json;
+      } catch (e) {
+        console.error("Recursive decode failed:", e);
+        return null;
+      }
+    }
+
+    function findDeepestUrl(nestedJson) {
+      if (!nestedJson) return null; // <-- Add this line
+      // Accepts either a JSON object or a stringified JSON
+      let obj = typeof nestedJson === 'string' ? JSON.parse(nestedJson) : nestedJson;
+      let url = obj.url;
+      // If url is itself a nested JSON (object), recurse
+      if (typeof url === 'object' && url !== null) {
+        return findDeepestUrl(url);
+      }
+      // If url is a string and is a nested data URL, try to parse it
+      if (typeof url === 'string' && url.startsWith(window.location.origin + '?data=')) {
+        try {
+          const params = new URL(url).search;
+          const decoded = Base58.decode(new URLSearchParams(params).get('data'));
+          const decompressed = pako.inflate(decoded, { to: 'string' });
+          return findDeepestUrl(decompressed);
+        } catch (e) {
+          return url;
+        }
+      }
+      // Otherwise, return the url (could be IPFS or any other)
+      return url;
+    }
+
+    function generateQRCode() {
+      const canvas = document.getElementById("bitmap");
     
-        renderQR(qrData);
-      });
+      // Move these variables to the outer scope of generateQRCode
+      let nestedJson = null;
+      let imageUrl = null;
+    
+      // Use an async IIFE to await the recursive decode
+      (async () => {
+        // 1. Get the nested JSON from the current URL's search/query string
+        nestedJson = await recursiveDecodeDataUrl(window.location.search);
+    
+        // 2. Find the deepest URL (e.g., imageUrl) from the nested JSON
+        imageUrl = findDeepestUrl(nestedJson);
+    
+        console.log("Nested JSON:", nestedJson);
+        console.log("Deepest imageUrl:", imageUrl);
+    
+        // Step 1: Gather fingerprint
+        const payload = getClientFingerprint();
+        console.log("Payload to be encoded:", payload);
+    
+        // Step 2: Get location and continue
+        getApproximateLocation((loc) => {
+          if (loc) payload.loc = loc;
+          // If location is not allowed or not available, it will be omitted from the payload
+          console.log("Payload with location:", payload);
+    
+          // Step 2.5: Add nested JSON to payload
+          // payload.url = nestedJson || {};
+          payload.url = `${window.location.origin}?data=${encodeURIComponent(JSON.stringify(nestedJson || {}))}`;
+          console.log("Payload with nested URL:", payload);
+    
+          // Step 3: Stringify and encode
+          let jsonString = JSON.stringify(payload);
+          let compressed = pako.deflate(jsonString);
+          let base58 = Base58.encode(compressed);
+          let qrData = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
+          console.log("QR Code Data:", qrData);
+    
+          // Try to render the QR code, fallback if it fails
+          function renderQR(dataToUse, fallbackTried = false) {
+            try {
+              const qr = !imageUrl
+                ? new QRCodeRenderer(canvas, dataToUse, {
+                    margin: 2,
+                    color: { dark: "#00FF00", light: "#121212" }
+                  })
+                : new ImageBackgroundQRCodeRenderer(
+                    canvas,
+                    dataToUse,
+                    imageUrl,
+                    {
+                      margin: 2,
+                      color: { dark: "#00FF0077", light: "#00000000" }
+                    }
+                  );
+              qr.render(() => qr.download());
+            } catch (err) {
+              if (!fallbackTried) {
+                // Fallback: minimal payload
+                console.warn("QR code too large or error occurred, falling back to rendering a QR code for the current URL instead.");
+                renderQR(window.location.href, true);
+              } else {
+                // If fallback also fails, log error
+                console.error("Failed to render even the minimal QR code:", err);
+              }
+            }
+          }
+    
+          renderQR(qrData);
+        });
+      })();
     }
 
     window.onload = () => {
