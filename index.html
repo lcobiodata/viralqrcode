@@ -333,13 +333,13 @@
     function findDeepestUrl(nestedJson) {
       if (!nestedJson) return null;
       let obj = typeof nestedJson === 'string' ? JSON.parse(nestedJson) : nestedJson;
-      let url = obj.url;
-      if (!url) return null;
-      if (typeof url === 'object') {
-        return findDeepestUrl(url);
+      let ref = obj.ref;
+      if (!ref) return null;
+      if (typeof ref === 'object') {
+        return findDeepestUrl(ref);
       }
-      if (typeof url === 'string' && url.startsWith('http')) {
-        return url;
+      if (typeof ref === 'string' && ref.startsWith('http')) {
+        return ref;
       }
       return null;
     }
@@ -379,7 +379,7 @@
           // payload.url = nestedJson || {};
           // Step 2.5: Add nested JSON to payload
           if (nestedJson) {
-            payload.url = nestedJson; // Embed as raw object, not encoded string
+            payload.ref = nestedJson; // Embed as raw object, not encoded string
           }
           console.log("Payload with nested URL:", payload);
     
