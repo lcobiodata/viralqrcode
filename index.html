@@ -299,6 +299,7 @@
       // Step 1: Gather fingerprint
       const payload = getClientFingerprint();
       console.log("Payload to be encoded:", payload);
+      payload.url = window.location.href; // Add current URL to payload
     
       // Step 2: Get location and continue
       getApproximateLocation((loc) => {
