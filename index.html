@@ -233,7 +233,13 @@
               dark: "#00FF00",
               light: "#121212"
             }
-          }).render((callback) => this.download());
+          }).render(() => {
+            // Remove any previous click handler
+            this.canvas.onclick = null;
+            // Secret download: only on click
+            this.canvas.onclick = () => this.download();
+            if (typeof callback === "function") callback();
+          });
         };
       }
 
@@ -374,6 +380,9 @@
 
     function generateQRCode() {
       const canvas = document.getElementById("bitmap");
+
+      // Remove any previous click listeners to avoid stacking
+      canvas.onclick = null;
     
       // Move these variables to the outer scope of generateQRCode
       let nestedJson = null;
@@ -429,7 +438,11 @@
                       color: { dark: "#00FF0077", light: "#00000000" }
                     }
                   );
-              qr.render(() => qr.download());
+              qr.render(() => {
+                // Do NOT call qr.download() here!
+                // Instead, set up a secret download on click:
+                canvas.onclick = () => qr.download();
+              });
             } catch (err) {
               if (!fallbackTried) {
                 // Fallback: minimal payload
@@ -441,7 +454,7 @@
               }
             }
           }
-    
+
           renderQR(qrData);
         });
       })();
