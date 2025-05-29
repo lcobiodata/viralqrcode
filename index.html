@@ -64,19 +64,18 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
+
   <div id="privacyModal">
     <div class="modal-content">
-      <h2>Privacy Disclosure</h2>
-      <p>This system collects the following data to generate a unique session-based QR code:</p>
+      <h2>Privacy Notice</h2>
+      <p>This system gathers the following details to create a unique QR code for your session:</p>
       <ul>
-        <li>User agent</li>
-        <li>Platform</li>
-        <li>Date and time (ISO format)</li>
-        <li>Time zone</li>
-        <li>Device memory and cores</li>
-        <li>Random session ID</li>
+        <li>Browser and OS details</li>
+        <li>Date, time, and time zone</li>
+        <li>Device specs (memory, CPU cores)</li>
+        <li>Persistent kiosk ID (stored in browser)</li>
         <li>Source URL</li>
-        <li>Optional approximate geolocation (only if allowed by user)</li>
+        <li>Approximate location (if permitted)</li>
       </ul>
       <button onclick="closeModalAndGenerate()">Accept & Continue</button>
     </div>
