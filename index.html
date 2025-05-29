@@ -283,32 +283,28 @@
       }
     }
 
-    async function recursiveDecodeDataUrl(urlOrSearch) {
-      // Accepts either a full URL or just the search/query string
-      if (!urlOrSearch || urlOrSearch === "" || urlOrSearch === "?") return null; // <--- Add this line
-    
-      let search = urlOrSearch.startsWith('?') ? urlOrSearch : (new URL(urlOrSearch)).search;
-      const params = new URLSearchParams(search);
+    async function decodeTopLevelDataUrl(urlOrSearch) {
+      if (!urlOrSearch || urlOrSearch === "" || urlOrSearch === "?") return null;
 
-      // Extract the 'data' parameter      
+      const search = urlOrSearch.startsWith('?')
+        ? urlOrSearch
+        : new URL(urlOrSearch).search;
+      const params = new URLSearchParams(search);
       const data = params.get('data');
       if (!data) return null;
-      
+
       try {
         let jsonString;
-      
-        // Try Base58 first (most common for your QR codes)
+
+        // Try Base58 first
         try {
           const decoded = Base58.decode(data);
           jsonString = pako.inflate(decoded, { to: 'string' });
-          // If this succeeds, continue as before
-        } catch (e) {
-          // Not Base58, try Base64 (if you ever use it)
+        } catch {
+          // Try Base64 fallback
           try {
-            // Basic Base64 check: only valid chars and length is multiple of 4
             if (/^[A-Za-z0-9+/=]+$/.test(data) && data.length % 4 === 0) {
               const decoded = atob(data);
-              // Try decompressing, fallback to plain string
               try {
                 jsonString = pako.inflate(Uint8Array.from(decoded, c => c.charCodeAt(0)), { to: 'string' });
               } catch {
@@ -317,65 +313,35 @@
             } else {
               throw new Error('Not Base64');
             }
-          } catch (e2) {
-            // Not Base64, try URI-decoded JSON
+          } catch {
+            // URI-decoded fallback
             try {
               jsonString = decodeURIComponent(data);
-            } catch (e3) {
-              // As last resort, use as-is
-              jsonString = data;
+            } catch {
+              jsonString = data; // raw string
             }
           }
         }
-      
-        const json = JSON.parse(jsonString);
-      
-        // Check for nested URL
-        const nestedUrl = json.url;
-        if (!nestedUrl) return json;
-        
-        // If IPFS gateway, return this JSON
-        if (typeof nestedUrl === "string" && /^https:\/\/[^\/]+\/ipfs\/[A-Za-z0-9]+/.test(nestedUrl)) {
-          return json;
-        }
-        
-        // If another nested data URL (same origin), recurse
-        if (typeof nestedUrl === "string" && nestedUrl.startsWith(window.location.origin + '?data=')) {
-          const nestedJson = await recursiveDecodeDataUrl(nestedUrl);
-          return { ...json, url: nestedJson };
-        }
-        
-        return json;
-      
-        return json;
+
+        return JSON.parse(jsonString);
       } catch (e) {
-        console.error("Recursive decode failed:", e);
+        console.error("Top-level decode failed:", e);
         return null;
       }
     }
 
     function findDeepestUrl(nestedJson) {
-      if (!nestedJson) return null; // <-- Add this line
-      // Accepts either a JSON object or a stringified JSON
+      if (!nestedJson) return null;
       let obj = typeof nestedJson === 'string' ? JSON.parse(nestedJson) : nestedJson;
       let url = obj.url;
-      // If url is itself a nested JSON (object), recurse
-      if (typeof url === 'object' && url !== null) {
+      if (!url) return null;
+      if (typeof url === 'object') {
         return findDeepestUrl(url);
       }
-      // If url is a string and is a nested data URL, try to parse it
-      if (typeof url === 'string' && url.startsWith(window.location.origin + '?data=')) {
-        try {
-          const params = new URL(url).search;
-          const decoded = Base58.decode(new URLSearchParams(params).get('data'));
-          const decompressed = pako.inflate(decoded, { to: 'string' });
-          return findDeepestUrl(decompressed);
-        } catch (e) {
-          return url;
-        }
+      if (typeof url === 'string' && url.startsWith('http')) {
+        return url;
       }
-      // Otherwise, return the url (could be IPFS or any other)
-      return url;
+      return null;
     }
 
     function generateQRCode() {
@@ -391,7 +357,7 @@
       // Use an async IIFE to await the recursive decode
       (async () => {
         // 1. Get the nested JSON from the current URL's search/query string
-        nestedJson = await recursiveDecodeDataUrl(window.location.search);
+        nestedJson = await decodeTopLevelDataUrl(window.location.search);
     
         // 2. Find the deepest URL (e.g., imageUrl) from the nested JSON
         imageUrl = findDeepestUrl(nestedJson);
@@ -411,7 +377,10 @@
     
           // Step 2.5: Add nested JSON to payload
           // payload.url = nestedJson || {};
-          payload.url = `${window.location.origin}?data=${encodeURIComponent(JSON.stringify(nestedJson || {}))}`;
+          // Step 2.5: Add nested JSON to payload
+          if (nestedJson) {
+            payload.url = nestedJson; // Embed as raw object, not encoded string
+          }
           console.log("Payload with nested URL:", payload);
     
           // Step 3: Stringify and encode
