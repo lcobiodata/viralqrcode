@@ -111,9 +111,7 @@
         mem: navigator.deviceMemory || null,
         dt: new Date().toISOString(), // e.g. "2025-05-28T14:23:45.123Z",
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        gen: "kiosk-" + getKioskId(),
-        src: window.location.href,
-        // cid: "QmP8veKKsqBKpQTKEcM8184ZqsQ6oZVdP51MkP6k489eyF"
+        sid: "kiosk-" + getKioskId(),
       };
     }
 
