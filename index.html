@@ -11,52 +11,12 @@
       height: 100vh;
       margin: 0;
       background: #121212;
-      font-family: monospace;
+      /* font-family: monospace; */
       color: #00FF00;
     }
     canvas {
       image-rendering: pixelated;
       border: none;
-    }
-    #privacyModal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(18, 18, 18, 0.97);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    .modal-content {
-      max-width: 600px;
-      padding: 2rem;
-      background-color: #121212;
-      border: 1px solid #00FF00;
-      text-align: left;
-      box-shadow: 0 0 20px #00FF00;
-      color: #00FF00;
-    }
-    .modal-content h2 {
-      margin-top: 0;
-    }
-    .modal-content ul {
-      padding-left: 1.2em;
-    }
-    .modal-content button {
-      margin-top: 2rem;
-      padding: 0.5rem 1rem;
-      background-color: #00FF00;
-      color: #121212;
-      font-weight: bold;
-      font-family: monospace;
-      border: none;
-      cursor: pointer;
-    }
-    .modal-content button:hover {
-      background-color: #33FF33;
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
@@ -64,30 +24,8 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 </head>
 <body>
-
-  <div id="privacyModal">
-    <div class="modal-content">
-      <h2>Privacy Notice</h2>
-      <p>This system gathers the following details to create a unique QR code for your session:</p>
-      <ul>
-        <li>Browser and OS details</li>
-        <li>Date, time, and time zone</li>
-        <li>Device specs (memory, CPU cores)</li>
-        <li>Persistent kiosk ID (stored in browser)</li>
-        <li>Source URL</li>
-        <li>Approximate location (if permitted)</li>
-      </ul>
-      <button onclick="closeModalAndGenerate()">Accept & Continue</button>
-    </div>
-  </div>
-
   <canvas id="bitmap"></canvas>
-
   <script>
-    function closeModalAndGenerate() {
-      document.getElementById('privacyModal').style.display = 'none';
-      generateQRCode();
-    }
 
     function getKioskId() {
       const storageKey = 'kioskId';
@@ -430,7 +368,16 @@
     }
 
     window.onload = () => {
-      document.getElementById('privacyModal').style.display = 'flex';
+      console.log(`Privacy Notice:
+This system gathers the following details to create a unique QR code for your session:
+- Browser and OS details
+- Date, time, and time zone
+- Device specs (memory, CPU cores)
+- Persistent kiosk ID (stored in browser)
+- Source URL
+- Approximate location (only if permitted)`
+      );
+      generateQRCode();
     };
   </script>
 </body>
