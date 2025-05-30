@@ -338,7 +338,7 @@
             // For now, just use the compressed data
             parentEncrypted = parentCompressed; // Replace with actual encryption if needed
             // Encode the compressed data to base58
-            let parentBase58 = Base58.encode(parentCompressed);
+            let parentBase58 = Base58.encode(parentEncrypted);
             // Set the external_url to point to the current page with the encoded data
             metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(parentBase58)}`;
           
