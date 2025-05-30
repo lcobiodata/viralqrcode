@@ -250,6 +250,41 @@
       }
     }
 
+    // Recursively decode the 'data' parameter from a URL, following external_url chains
+    async function recursiveDecodeData(dataParam) {
+      let decodedData = null;
+      let currentData = dataParam;
+      let depth = 0;
+      while (currentData && depth < 10) { // Prevent infinite loops
+        try {
+          // Step 1: base58 decode, then pako inflate
+          const decoded = Base58.decode(currentData);
+          const inflated = pako.inflate(decoded, { to: 'string' });
+          decodedData = inflated;
+          // Step 2: parse JSON
+          const json = JSON.parse(inflated);
+          // Step 3: look for external_url with a data param
+          const url = new URL(json.external_url, window.location.origin);
+          const nextData = url.searchParams.get('data');
+          if (nextData && nextData !== currentData) {
+            currentData = nextData;
+            depth++;
+          } else {
+            break;
+          }
+        } catch (e) {
+          console.error("Failed to recursively decode data:", e);
+          break;
+        }
+      }
+      return decodedData;
+    }
+
+    // Function to generate the QR code
+    /**
+     * Generates a QR code with the current kiosk metadata and data from URL parameters.
+     * The QR code will be rendered on a canvas element and can be downloaded by clicking it.
+     */
     function generateQRCode() {
       const canvas = document.getElementById("bitmap");
 
@@ -262,89 +297,78 @@
         buildNFTMetadata((metadata) => {
           const params = new URLSearchParams(window.location.search);
           const data = params.get('data');
-
-          // `data` is base58 encoded, decode it
-          let decodedData;
-          if (data) {
-            try {
-              const decoded = Base58.decode(data);
-              decodedData = pako.inflate(decoded, { to: 'string' });
-            } catch (e) {
-              console.error("Failed to decode 'data' parameter:", e);
-              decodedData = null;
-            }
-          }
-          console.log("Decoded Data:", decodedData);
-
-          // Look for image URL in decoded data and put it in metadata along with generation
-          if (decodedData) {
-            try {
-              const decodedJson = JSON.parse(decodedData);
-              if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
-                metadata.image = decodedJson.image;
-              }
-              // Look for a generation attribute
-              let nextGeneration = 0;
-              if (decodedJson.attributes) {
-                const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
-                if (generationAttr) {
-                  // Try to parse as integer and increment
-                  const prevGen = parseInt(generationAttr.value, 10);
-                  nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
+          
+          // Recursively decode the 'data' parameter
+          recursiveDecodeData(data).then(decodedData => {
+            console.log("Deepest Decoded Data:", decodedData);
+          
+            if (decodedData) {
+              try {
+                const decodedJson = JSON.parse(decodedData);
+                if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
+                  metadata.image = decodedJson.image;
                 }
-              }
-              // Add or update the Generation attribute in metadata
-              metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
-              metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
-            } catch (e) {
-              console.error("Failed to parse decoded 'data' parameter:", e);
-            }
-          }
-
-          metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(JSON.stringify(decodedData))}`;
-
-          console.log("Metadata:", metadata);
-
-          // Create the payload
-          let jsonString = JSON.stringify(metadata, null, 2);
-          // Compress the JSON string using pako
-          let compressed = pako.deflate(jsonString);
-          // Encode the compressed data to Base58
-          let base58 = Base58.encode(compressed);
-          // Add the base58 encoded data to the metadata
-          
-          let payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
-          console.log("QR Code Data:", payload);
-          
-          let imageUrl = null
-          // Replace "ipfs://" with "https://ipfs.io/ipfs/"
-          if (metadata.image && metadata.image.startsWith("ipfs://")) {
-            imageUrl = metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/");
-          }
-          console.log("Image URL:", imageUrl);
-          
-          // Render the QR code with the payload
-          function renderQR(dataToUse) {
-            const qr = !imageUrl
-              ? new QRCodeRenderer(canvas, dataToUse, {
-                  margin: 2,
-                  color: { dark: "#00FF00", light: "#121212" }
-                })
-              : new ImageBackgroundQRCodeRenderer(
-                  canvas,
-                  dataToUse,
-                  imageUrl,
-                  {
-                    margin: 2,
-                    color: { dark: "#00FF0077", light: "#00000000" }
+                // Look for a generation attribute
+                let nextGeneration = 0;
+                if (decodedJson.attributes) {
+                  const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
+                  if (generationAttr) {
+                    const prevGen = parseInt(generationAttr.value, 10);
+                    nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
                   }
-                );
-            qr.render(() => {
-              canvas.onclick = () => qr.download();
-            });
-          }
-
-          renderQR(payload);
+                }
+                metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
+                metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
+              } catch (e) {
+                console.error("Failed to parse decoded 'data' parameter:", e);
+              }
+            }
+          
+            // Re-encode the decodedData as base58 for the external_url
+            let parentJsonString = typeof decodedData === "string" ? decodedData : JSON.stringify(decodedData, null, 2);
+            let parentCompressed = pako.deflate(parentJsonString);
+            let parentBase58 = Base58.encode(parentCompressed);
+            metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(parentBase58)}`;
+          
+            console.log("Metadata:", metadata);
+          
+            // Create the payload
+            let jsonString = JSON.stringify(metadata, null, 2);
+            let compressed = pako.deflate(jsonString);
+            let base58 = Base58.encode(compressed);
+            let payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
+            console.log("QR Code Data:", payload);
+          
+            let imageUrl = null;
+            // Replace "ipfs://" with "https://ipfs.io/ipfs/"
+            if (metadata.image && metadata.image.startsWith("ipfs://")) {
+              imageUrl = metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/");
+            }
+            console.log("Image URL:", imageUrl);
+          
+            // Render the QR code with the payload
+            function renderQR(dataToUse) {
+              const qr = !imageUrl
+                ? new QRCodeRenderer(canvas, dataToUse, {
+                    margin: 2,
+                    color: { dark: "#00FF00", light: "#121212" }
+                  })
+                : new ImageBackgroundQRCodeRenderer(
+                    canvas,
+                    dataToUse,
+                    imageUrl,
+                    {
+                      margin: 2,
+                      color: { dark: "#00FF0077", light: "#00000000" }
+                    }
+                  );
+              qr.render(() => {
+                canvas.onclick = () => qr.download();
+              });
+            }
+          
+            renderQR(payload);
+          });
         });
       })();
     }
