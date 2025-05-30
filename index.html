@@ -263,12 +263,16 @@
           decodedData = inflated;
           // Step 2: parse JSON
           const json = JSON.parse(inflated);
-          // Step 3: look for external_url with a data param
-          const url = new URL(json.external_url, window.location.origin);
-          const nextData = url.searchParams.get('data');
-          if (nextData && nextData !== currentData) {
-            currentData = nextData;
-            depth++;
+          // Defensive: only follow if json is an object and has external_url
+          if (json && typeof json === "object" && json.external_url) {
+            const url = new URL(json.external_url, window.location.origin);
+            const nextData = url.searchParams.get('data');
+            if (nextData && nextData !== currentData) {
+              currentData = nextData;
+              depth++;
+            } else {
+              break;
+            }
           } else {
             break;
           }
@@ -305,25 +309,27 @@
             if (decodedData) {
               try {
                 const decodedJson = JSON.parse(decodedData);
-                if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
-                  metadata.image = decodedJson.image;
-                }
-                // Look for a generation attribute
-                let nextGeneration = 0;
-                if (decodedJson.attributes) {
-                  const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
-                  if (generationAttr) {
-                    const prevGen = parseInt(generationAttr.value, 10);
-                    nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
+                if (decodedJson && typeof decodedJson === "object") {
+                  if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
+                    metadata.image = decodedJson.image;
                   }
+                  // Look for a generation attribute
+                  let nextGeneration = 0;
+                  if (decodedJson.attributes) {
+                    const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
+                    if (generationAttr) {
+                      const prevGen = parseInt(generationAttr.value, 10);
+                      nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
+                    }
+                  }
+                  metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
+                  metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
                 }
-                metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
-                metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
               } catch (e) {
                 console.error("Failed to parse decoded 'data' parameter:", e);
               }
             }
-          
+
             // Re-encode the decodedData as base58 for the external_url
             let parentJsonString = typeof decodedData === "string" ? decodedData : JSON.stringify(decodedData, null, 2);
             let parentCompressed = pako.deflate(parentJsonString);
