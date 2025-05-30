@@ -249,25 +249,90 @@
         });
       }
     }
-
-    // Recursively decode the 'data' parameter from a URL, following external_url chains
-    async function recursiveDecodeData(dataParam) {
+    
+    async function decryptWithJsonKey(jsonKeyObj, encryptedData) {
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      const jsonString = JSON.stringify(jsonKeyObj);
+      const keyMaterial = encoder.encode(jsonString);
+    
+      const passwordKey = await crypto.subtle.importKey(
+        "raw", keyMaterial, "PBKDF2", false, ["deriveKey"]
+      );
+    
+      const salt = new Uint8Array(encryptedData.salt);
+      const iv = new Uint8Array(encryptedData.iv);
+      const ciphertext = new Uint8Array(encryptedData.ciphertext);
+    
+      const derivedKey = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+        passwordKey,
+        { name: "AES-GCM", length: 256 },
+        true,
+        ["decrypt"]
+      );
+    
+      const decrypted = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        derivedKey,
+        ciphertext
+      );
+    
+      return new Uint8Array(decrypted);
+    }
+    
+    // Recursive decode + decrypt
+    async function recursiveDecodeData(dataParam, getStoryKeyForStep) {
       let decodedData = null;
       let currentData = dataParam;
       let depth = 0;
+      showSpinner("Decoding QR data...");
       while (currentData && depth < 10) { // Prevent infinite loops
         try {
-          // Step 1: base58 decode, then pako inflate
+          console.log(`[decode] Step ${depth}: base58 decoding...`);
           const decoded = Base58.decode(currentData);
+          console.log(`[decode] Step ${depth}: inflating...`);
           const inflated = pako.inflate(decoded, { to: 'string' });
-          decodedData = inflated;
-          // Step 2: parse JSON
-          const json = JSON.parse(inflated);
+    
+          // Try to parse as JSON
+          let json;
+          try {
+            json = JSON.parse(inflated);
+            console.log(`[decode] Step ${depth}: parsed JSON`, json);
+          } catch {
+            json = null;
+            console.log(`[decode] Step ${depth}: not JSON`);
+          }
+    
+          // If it looks like an encrypted object, try to decrypt
+          if (
+            json &&
+            typeof json === "object" &&
+            json.iv && json.salt && json.ciphertext
+          ) {
+            showSpinner("Decrypting QR data...");
+            console.log(`[decode] Step ${depth}: Detected encrypted payload, fetching story key...`);
+            const storyKey = await getStoryKeyForStep(json);
+            if (!storyKey) throw new Error("No decryption key for this step");
+            console.log(`[decode] Step ${depth}: Decrypting with story key`, storyKey);
+            const decryptedBytes = await decryptWithJsonKey(storyKey, json);
+            decodedData = pako.inflate(decryptedBytes, { to: 'string' });
+            console.log(`[decode] Step ${depth}: Decrypted and inflated`, decodedData);
+            try {
+              json = JSON.parse(decodedData);
+            } catch {
+              json = null;
+            }
+          } else {
+            decodedData = inflated;
+          }
+    
           // Defensive: only follow if json is an object and has external_url
           if (json && typeof json === "object" && json.external_url) {
             const url = new URL(json.external_url, window.location.origin);
             const nextData = url.searchParams.get('data');
             if (nextData && nextData !== currentData) {
+              console.log(`[decode] Step ${depth}: Found nested data, recursing...`);
               currentData = nextData;
               depth++;
             } else {
@@ -277,11 +342,97 @@
             break;
           }
         } catch (e) {
-          console.error("Failed to recursively decode data:", e);
+          console.error("Failed to recursively decode/decrypt data:", e);
           break;
         }
       }
+      hideSpinner();
       return decodedData;
+    }
+    
+    // Add this helper at the top of your script (before generateQRCode)
+    async function encryptWithJsonKey(jsonKeyObj, plaintextBytes) {
+      const encoder = new TextEncoder();
+      const jsonString = JSON.stringify(jsonKeyObj);
+      const keyMaterial = encoder.encode(jsonString);
+
+      const passwordKey = await crypto.subtle.importKey(
+        "raw", keyMaterial, "PBKDF2", false, ["deriveKey"]
+      );
+
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const derivedKey = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+        passwordKey,
+        { name: "AES-GCM", length: 256 },
+        true,
+        ["encrypt", "decrypt"]
+      );
+
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        derivedKey,
+        plaintextBytes
+      );
+
+      return {
+        iv: Array.from(iv),
+        salt: Array.from(salt),
+        ciphertext: Array.from(new Uint8Array(ciphertext))
+      };
+    }
+
+    // Helper: fetch latest HN story before a given timestamp
+    async function findLatestHNStoryBefore(timestamp) {
+      const storyIds = await fetch("https://hacker-news.firebaseio.com/v0/newstories.json").then(res => res.json());
+      let bestStory = null;
+      for (let id of storyIds) {
+        const item = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(res => res.json());
+        if (!item || !item.time || !item.url) continue;
+        if (item.time <= timestamp) {
+          if (!bestStory || item.time > bestStory.time) {
+            bestStory = item;
+          }
+        }
+      }
+      return bestStory;
+    }
+
+    // Spinner overlay helpers
+    function showSpinner(msg = "Loading...") {
+      let spinner = document.getElementById("spinner-overlay");
+      if (!spinner) {
+        spinner = document.createElement("div");
+        spinner.id = "spinner-overlay";
+        spinner.style.position = "fixed";
+        spinner.style.top = 0;
+        spinner.style.left = 0;
+        spinner.style.width = "100vw";
+        spinner.style.height = "100vh";
+        spinner.style.background = "rgba(18,18,18,0.92)";
+        spinner.style.display = "flex";
+        spinner.style.flexDirection = "column";
+        spinner.style.justifyContent = "center";
+        spinner.style.alignItems = "center";
+        spinner.style.zIndex = 9999;
+        spinner.innerHTML = `
+          <div style="border: 6px solid #222; border-top: 6px solid #00FF00; border-radius: 50%; width: 48px; height: 48px; animation: spin 1s linear infinite;"></div>
+          <div style="margin-top: 18px; color: #00FF00; font-family: monospace; font-size: 1.1em;">${msg}</div>
+          <style>
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+          </style>
+        `;
+        document.body.appendChild(spinner);
+      } else {
+        spinner.querySelector("div:nth-child(2)").textContent = msg;
+        spinner.style.display = "flex";
+      }
+    }
+    function hideSpinner() {
+      const spinner = document.getElementById("spinner-overlay");
+      if (spinner) spinner.style.display = "none";
     }
 
     // Function to generate the QR code
@@ -291,21 +442,44 @@
      */
     function generateQRCode() {
       const canvas = document.getElementById("bitmap");
-
+    
       // Remove any previous click listeners to avoid stacking
       canvas.onclick = null;
     
       // Use an async IIFE to await the recursive decode
       (async () => {
         // Build the NFT metadata
-        buildNFTMetadata((metadata) => {
+        
+        buildNFTMetadata(async (metadata) => {
           const params = new URLSearchParams(window.location.search);
           const data = params.get('data');
-          
-          // Recursively decode the 'data' parameter
-          recursiveDecodeData(data).then(decodedData => {
-            console.log("Deepest Decoded Data:", decodedData);
-          
+        
+          // Get timestamp from metadata (ISO string to UNIX seconds)
+          const tsAttr = metadata.attributes.find(a => a.trait_type === "Timestamp");
+          const cutoffTimestamp = tsAttr ? Math.floor(new Date(tsAttr.value).getTime() / 1000) : Math.floor(Date.now() / 1000);
+        
+          // Prepare the function to get the story key for decryption
+          async function getStoryKeyForStep(json) {
+            const ts = json.time || cutoffTimestamp;
+            showSpinner();
+            const hnStory = await findLatestHNStoryBefore(ts);
+            hideSpinner();
+            if (!hnStory) return null;
+            return {
+              id: hnStory.id,
+              title: hnStory.title,
+              url: hnStory.url,
+              time: hnStory.time,
+              by: hnStory.by
+            };
+          }
+        
+          // Now call recursiveDecodeData with both arguments:
+          recursiveDecodeData(data, getStoryKeyForStep).then(async decodedData => {
+            console.log("[QR] Deepest Decoded Data:", decodedData);
+
+            // Show spinner while processing
+            showSpinner("Decrypting and processing data...");
             if (decodedData) {
               try {
                 const decodedJson = JSON.parse(decodedData);
@@ -326,38 +500,114 @@
                   metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
                 }
               } catch (e) {
-                console.error("Failed to parse decoded 'data' parameter:", e);
+                console.error("Failed to recursively decode/decrypt data:", e);
+                if (e instanceof DOMException) {
+                  console.error("DOMException name:", e.name, "message:", e.message);
+                }
+                // Optionally, show a user-friendly message
+                showSpinner("Failed to decode or decrypt QR data. Data may be corrupted or key is missing.");
+                setTimeout(hideSpinner, 2500);
+                return;
               }
             }
+            // Hide spinner after processing
+            hideSpinner();
 
-            // Re-encode the decodedData as base58 for the external_url
+            // Get timestamp from metadata (ISO string to UNIX seconds)
+            const tsAttr = metadata.attributes.find(a => a.trait_type === "Timestamp");
+            const cutoffTimestamp = tsAttr ? Math.floor(new Date(tsAttr.value).getTime() / 1000) : Math.floor(Date.now() / 1000);
+            console.log(`[QR] Using cutoffTimestamp: ${cutoffTimestamp} (${new Date(cutoffTimestamp * 1000).toISOString()})`);
+    
+            // --- Fetch HN story before timestamp ---
+            console.log("[QR] Fetching latest Hacker News story before timestamp...");
+            showSpinner();
+            const hnStory = await findLatestHNStoryBefore(cutoffTimestamp);
+            hideSpinner();
+            if (!hnStory) {
+              console.warn("[QR] No Hacker News story found before timestamp!");
+              alert("No Hacker News story found before timestamp!");
+              return;
+            }
+            const storyKey = {
+              id: hnStory.id,
+              title: hnStory.title,
+              url: hnStory.url,
+              time: hnStory.time,
+              by: hnStory.by
+            };
+            console.log("[QR] Using HN story as encryption key:", storyKey);
+    
+            // --- Symmetric encryption step using HN story as key ---
+            showSpinner("Encrypting...");
             let parentJsonString = typeof decodedData === "string" ? decodedData : JSON.stringify(decodedData, null, 2);
             let parentCompressed = pako.deflate(parentJsonString);
-            // // Placeholder for symetric encryption
-            // let parentEncrypted = encrypt(parentCompressed); // Implement your encryption logic here
-            // For now, just use the compressed data
-            parentEncrypted = parentCompressed; // Replace with actual encryption if needed
-            // Encode the compressed data to base58
-            let parentBase58 = Base58.encode(parentEncrypted);
+            console.log("[QR] Compressed parent data:", parentCompressed);
+            console.log("[QR] Encrypting parent data with HN story key...");
+            const parentEncryptedObj = await encryptWithJsonKey(storyKey, parentCompressed);
+            console.log("[QR] Encrypted parent data:", parentEncryptedObj);
+            hideSpinner();
+    
+            // Optional: Try decrypting right away to verify
+            try {
+              const decoder = new TextDecoder();
+              // Reconstruct key and encrypted data
+              const decryptedBuffer = await (async () => {
+                // Re-import key and decrypt
+                const encoder = new TextEncoder();
+                const jsonString = JSON.stringify(storyKey);
+                const keyMaterial = encoder.encode(jsonString);
+                const passwordKey = await crypto.subtle.importKey(
+                  "raw", keyMaterial, "PBKDF2", false, ["deriveKey"]
+                );
+                const salt = new Uint8Array(parentEncryptedObj.salt);
+                const iv = new Uint8Array(parentEncryptedObj.iv);
+                const ciphertext = new Uint8Array(parentEncryptedObj.ciphertext);
+                const derivedKey = await crypto.subtle.deriveKey(
+                  { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+                  passwordKey,
+                  { name: "AES-GCM", length: 256 },
+                  true,
+                  ["decrypt"]
+                );
+                const decrypted = await crypto.subtle.decrypt(
+                  { name: "AES-GCM", iv },
+                  derivedKey,
+                  ciphertext
+                );
+                return decrypted;
+              })();
+              const decompressed = pako.inflate(new Uint8Array(decryptedBuffer), { to: 'string' });
+              console.log("[QR] Decrypted and decompressed parent data:", decompressed);
+            } catch (e) {
+              console.warn("[QR] Decryption test failed:", e);
+            }
+    
+            let parentEncryptedJson = JSON.stringify(parentEncryptedObj);
+            let parentEncryptedCompressed = pako.deflate(parentEncryptedJson);
+            let parentBase58 = Base58.encode(parentEncryptedCompressed);
+    
             // Set the external_url to point to the current page with the encoded data
             metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(parentBase58)}`;
-          
-            console.log("Metadata:", metadata);
-          
+            console.log("[QR] Set metadata.external_url to encrypted parent data.");
+    
+            console.log("[QR] Metadata for this QR:", metadata);
+    
             // Create the payload
             let jsonString = JSON.stringify(metadata, null, 2);
             let compressed = pako.deflate(jsonString);
             let base58 = Base58.encode(compressed);
             let payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
-            console.log("QR Code Data:", payload);
-          
+            console.log("[QR] Final QR Code Data:", payload);
+    
             let imageUrl = null;
             // Replace "ipfs://" with "https://ipfs.io/ipfs/"
             if (metadata.image && metadata.image.startsWith("ipfs://")) {
               imageUrl = metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/");
             }
-            console.log("Image URL:", imageUrl);
-          
+            if (imageUrl) {
+              console.log("[QR] Using image background:", imageUrl);
+            }
+    
             // Render the QR code with the payload
             function renderQR(dataToUse) {
               const qr = !imageUrl
@@ -378,7 +628,7 @@
                 canvas.onclick = () => qr.download();
               });
             }
-          
+    
             renderQR(payload);
           });
         });
