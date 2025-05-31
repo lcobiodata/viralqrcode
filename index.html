@@ -443,14 +443,11 @@
             const plaintextBytes = encoder.encode(plaintext);
             // Encrypt using Reddit Story ID
             const encrypted = await encryptWithStringKey(redditStory.title, plaintextBytes);
-            
-            // Encode the encrypted data as base58
-            const encodeObj = (obj) => Base58.encode(pako.deflate(JSON.stringify(obj)));
             // Add encrypted attributes to metadata
             metadata.attributes.push(
-              { trait_type: "Encrypted Fingerprint", value: encodeObj(encrypted.ciphertext) },
-              { trait_type: "IV", value: encodeObj(encrypted.iv) },
-              { trait_type: "Salt", value: encodeObj(encrypted.salt) }
+              { trait_type: "Encrypted Fingerprint", value: JSON.stringify(encrypted.ciphertext) },
+              { trait_type: "IV", value: JSON.stringify(encrypted.iv) },
+              { trait_type: "Salt", value: JSON.stringify(encrypted.salt) }
             );
             // Add Reddit story attributes as before
             metadata.attributes.push(
