@@ -40,10 +40,6 @@
       }
 
       const fingerprint = {
-        ua: navigator.userAgent,
-        plat: navigator.platform,
-        cores: navigator.hardwareConcurrency || null,
-        mem: navigator.deviceMemory || null,
         dt: new Date().toISOString(),
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         kid: getOrCreateKioskId()
@@ -513,9 +509,7 @@
     window.onload = () => {
       console.log(`Privacy Notice:
 This system gathers the following details to create a unique QR code for your session:
-- Browser and OS details
 - Date, time, and time zone
-- Device specs (memory, CPU cores)
 - Persistent kiosk ID (stored in browser)
 - Source URL
 - Approximate location (only if permitted)`
