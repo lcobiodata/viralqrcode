@@ -319,12 +319,29 @@
       if (spinner) spinner.style.display = "none";
     }
 
+    // Helper: fetch latest HN story before a given timestamp
+    async function findLatestHNStoryBefore(timestamp) {
+      const storyIds = await fetch("https://hacker-news.firebaseio.com/v0/newstories.json").then(res => res.json());
+      let bestStory = null;
+      for (let id of storyIds) {
+        const item = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(res => res.json());
+        if (!item || !item.time || !item.url) continue;
+        if (item.time <= timestamp) {
+          if (!bestStory || item.time > bestStory.time) {
+            bestStory = item;
+          }
+        }
+      }
+      return bestStory;
+    }
+
     // Function to generate the QR code
     /**
      * Generates a QR code with the current kiosk metadata and data from URL parameters.
      * The QR code will be rendered on a canvas element and can be downloaded by clicking it.
      */
     function generateQRCode() {
+      showSpinner("Generating QR Code...");
       const canvas = document.getElementById("bitmap");
 
       // Remove any previous click listeners to avoid stacking
@@ -333,89 +350,107 @@
       // Use an async IIFE to await the recursive decode
       (async () => {
         // Build the NFT metadata
-        buildNFTMetadata((metadata) => {
+        buildNFTMetadata(async (metadata) => {
           const params = new URLSearchParams(window.location.search);
           const data = params.get('data');
           
           // Recursively decode the 'data' parameter
-          recursiveDecodeData(data).then(decodedData => {
-            console.log("Deepest Decoded Data:", decodedData);
-          
-            if (decodedData) {
-              try {
-                const decodedJson = JSON.parse(decodedData);
-                if (decodedJson && typeof decodedJson === "object") {
-                  if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
-                    metadata.image = decodedJson.image;
-                  }
-                  // Look for a generation attribute
-                  let nextGeneration = 0;
-                  if (decodedJson.attributes) {
-                    const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
-                    if (generationAttr) {
-                      const prevGen = parseInt(generationAttr.value, 10);
-                      nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
-                    }
-                  }
-                  metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
-                  metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
+          const decodedData = await recursiveDecodeData(data);
+          console.log("Deepest Decoded Data:", decodedData);
+        
+          if (decodedData) {
+            try {
+              const decodedJson = JSON.parse(decodedData);
+              if (decodedJson && typeof decodedJson === "object") {
+                if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
+                  metadata.image = decodedJson.image;
                 }
-              } catch (e) {
-                console.error("Failed to parse decoded 'data' parameter:", e);
+                // Look for a generation attribute
+                let nextGeneration = 0;
+                if (decodedJson.attributes) {
+                  const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
+                  if (generationAttr) {
+                    const prevGen = parseInt(generationAttr.value, 10);
+                    nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
+                  }
+                }
+                metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
+                metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
               }
+            } catch (e) {
+              console.error("Failed to parse decoded 'data' parameter:", e);
             }
+          }
 
-            // Re-encode the decodedData as base58 for the external_url
-            let parentJsonString = typeof decodedData === "string" ? decodedData : JSON.stringify(decodedData, null, 2);
-            let parentCompressed = pako.deflate(parentJsonString);
-            // // Placeholder for symetric encryption
-            // let parentEncrypted = encrypt(parentCompressed); // Implement your encryption logic here
-            // For now, just use the compressed data
-            parentEncrypted = parentCompressed; // Replace with actual encryption if needed
-            // Encode the compressed data to base58
-            let parentBase58 = Base58.encode(parentCompressed);
-            // Set the external_url to point to the current page with the encoded data
-            metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(parentBase58)}`;
-          
-            console.log("Metadata:", metadata);
-          
-            // Create the payload
-            let jsonString = JSON.stringify(metadata, null, 2);
-            let compressed = pako.deflate(jsonString);
-            let base58 = Base58.encode(compressed);
-            let payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
-            console.log("QR Code Data:", payload);
-          
-            let imageUrl = null;
-            // Replace "ipfs://" with "https://ipfs.io/ipfs/"
-            if (metadata.image && metadata.image.startsWith("ipfs://")) {
-              imageUrl = metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/");
-            }
-            console.log("Image URL:", imageUrl);
-          
-            // Render the QR code with the payload
-            function renderQR(dataToUse) {
-              const qr = !imageUrl
-                ? new QRCodeRenderer(canvas, dataToUse, {
+          // --- Add HN story using the metadata timestamp ---
+          // Find the timestamp attribute (ISO string)
+          const tsAttr = metadata.attributes.find(attr => attr.trait_type === "Timestamp");
+          let hnStory = null;
+          if (tsAttr && tsAttr.value) {
+            // Convert ISO string to Unix timestamp (seconds)
+            const ts = Math.floor(new Date(tsAttr.value).getTime() / 1000);
+            hnStory = await findLatestHNStoryBefore(ts);
+          }
+          if (hnStory) {
+            metadata.attributes.push(
+              { trait_type: "HN Story Title", value: hnStory.title },
+              { trait_type: "HN Story URL", value: hnStory.url },
+              { trait_type: "HN Story ID", value: hnStory.id }
+            );
+          }
+          // --- End HN story addition ---
+
+          // Re-encode the decodedData as base58 for the external_url
+          let parentJsonString = typeof decodedData === "string" ? decodedData : JSON.stringify(decodedData, null, 2);
+          let parentCompressed = pako.deflate(parentJsonString);
+          // // Placeholder for symetric encryption
+          // let parentEncrypted = encrypt(parentCompressed); // Implement your encryption logic here
+          // For now, just use the compressed data
+          parentEncrypted = parentCompressed; // Replace with actual encryption if needed
+          // Encode the compressed data to base58
+          let parentBase58 = Base58.encode(parentCompressed);
+          // Set the external_url to point to the current page with the encoded data
+          metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(parentBase58)}`;
+        
+          console.log("Metadata:", metadata);
+        
+          // Create the payload
+          let jsonString = JSON.stringify(metadata, null, 2);
+          let compressed = pako.deflate(jsonString);
+          let base58 = Base58.encode(compressed);
+          let payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
+          console.log("QR Code Data:", payload);
+        
+          let imageUrl = null;
+          // Replace "ipfs://" with "https://ipfs.io/ipfs/"
+          if (metadata.image && metadata.image.startsWith("ipfs://")) {
+            imageUrl = metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/");
+          }
+          console.log("Image URL:", imageUrl);
+        
+          // Render the QR code with the payload
+          function renderQR(dataToUse) {
+            const qr = !imageUrl
+              ? new QRCodeRenderer(canvas, dataToUse, {
+                  margin: 2,
+                  color: { dark: "#00FF00", light: "#121212" }
+                })
+              : new ImageBackgroundQRCodeRenderer(
+                  canvas,
+                  dataToUse,
+                  imageUrl,
+                  {
                     margin: 2,
-                    color: { dark: "#00FF00", light: "#121212" }
-                  })
-                : new ImageBackgroundQRCodeRenderer(
-                    canvas,
-                    dataToUse,
-                    imageUrl,
-                    {
-                      margin: 2,
-                      color: { dark: "#00FF0077", light: "#00000000" }
-                    }
-                  );
-              qr.render(() => {
-                canvas.onclick = () => qr.download();
-              });
-            }
-          
-            renderQR(payload);
-          });
+                    color: { dark: "#00FF0077", light: "#00000000" }
+                  }
+                );
+            qr.render(() => {
+              canvas.onclick = () => qr.download();
+              hideSpinner();
+            });
+          }
+        
+          renderQR(payload);
         });
       })();
     }
@@ -430,11 +465,7 @@ This system gathers the following details to create a unique QR code for your se
 - Source URL
 - Approximate location (only if permitted)`
       );
-      showSpinner("Generating QR Code...");
-      // Start generating the QR code
       generateQRCode();
-      // Hide spinner after a short delay to allow rendering
-      setTimeout(() => hideSpinner(), 1000);
     };
   </script>
 </body>
