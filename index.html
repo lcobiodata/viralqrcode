@@ -257,25 +257,29 @@
           // Step 2: parse JSON
           const json = JSON.parse(inflated);
     
-          // --- Track nextGeneration at each level ---
-          if (json && typeof json === "object" && Array.isArray(json.attributes)) {
-            const generationAttr = json.attributes.find(attr => attr.trait_type === "Generation");
-            if (generationAttr) {
-              const gen = parseInt(generationAttr.value, 10);
-              if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
-                genTracker.nextGeneration = gen + 1;
+          if (json && typeof json === "object") {
+            // --- Track nextGeneration at each level ---
+            if (Array.isArray(json.attributes)) {
+              const generationAttr = json.attributes.find(attr => attr.trait_type === "Generation");
+              if (generationAttr) {
+                const gen = parseInt(generationAttr.value, 10);
+                if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
+                  genTracker.nextGeneration = gen + 1;
+                }
               }
             }
-          }
-          // ------------------------------------------
-    
-          // Defensive: only follow if json is an object and has external_url
-          if (json && typeof json === "object" && json.external_url) {
-            const url = new URL(json.external_url, window.location.origin);
-            const nextData = url.searchParams.get('data');
-            if (nextData && nextData !== currentData) {
-              currentData = nextData;
-              depth++;
+            // ------------------------------------------
+          
+            // Defensive: only follow if json has external_url
+            if (json.external_url) {
+              const url = new URL(json.external_url, window.location.origin);
+              const nextData = url.searchParams.get('data');
+              if (nextData && nextData !== currentData) {
+                currentData = nextData;
+                depth++;
+              } else {
+                break;
+              }
             } else {
               break;
             }
