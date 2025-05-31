@@ -254,6 +254,10 @@
           const decoded = Base58.decode(currentData);
           const inflated = pako.inflate(decoded, { to: 'string' });
           decodedData = inflated;
+          if (depth === 0) {
+          console.log("Current Decoded Data:", decodedData);
+          }
+
           // Step 2: parse JSON
           const json = JSON.parse(inflated);
     
@@ -291,6 +295,7 @@
           break;
         }
       }
+      console.log("Deepest Decoded Data:", decodedData);
       return decodedData;
     }
     // Spinner overlay helpers
@@ -401,7 +406,6 @@
           const data = params.get('data');
           const genTracker = { nextGeneration: 0 };
           const decodedData = await recursiveDecodeData(data, genTracker);
-          console.log("Deepest Decoded Data:", decodedData);
           
           if (decodedData) {
             try {
@@ -464,7 +468,7 @@
           // Set the external_url to point to the current page with the encoded data
           metadata.external_url = `${window.location.origin}?data=${encodeURIComponent(parentBase58)}`;
         
-          console.log("Metadata:", JSON.stringify(metadata, null, 2));   
+          console.log("Data To Be Encoded:", JSON.stringify(metadata, null, 2));   
      
           // Create the payload
           let jsonString = JSON.stringify(metadata, null, 2);
