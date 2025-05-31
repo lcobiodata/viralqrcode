@@ -251,7 +251,7 @@
     }
 
     // Recursively decode the 'data' parameter from a URL, following external_url chains
-    async function recursiveDecodeData(dataParam) {
+    async function recursiveDecodeData(dataParam, genTracker = { nextGeneration: 0 }) {
       let decodedData = null;
       let currentData = dataParam;
       let depth = 0;
@@ -263,6 +263,19 @@
           decodedData = inflated;
           // Step 2: parse JSON
           const json = JSON.parse(inflated);
+    
+          // --- Track nextGeneration at each level ---
+          if (json && typeof json === "object" && Array.isArray(json.attributes)) {
+            const generationAttr = json.attributes.find(attr => attr.trait_type === "Generation");
+            if (generationAttr) {
+              const gen = parseInt(generationAttr.value, 10);
+              if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
+                genTracker.nextGeneration = gen + 1;
+              }
+            }
+          }
+          // ------------------------------------------
+    
           // Defensive: only follow if json is an object and has external_url
           if (json && typeof json === "object" && json.external_url) {
             const url = new URL(json.external_url, window.location.origin);
@@ -283,7 +296,6 @@
       }
       return decodedData;
     }
-
     // Spinner overlay helpers
     function showSpinner(msg = "Loading...") {
       let spinner = document.getElementById("spinner-overlay");
@@ -358,11 +370,10 @@
         buildNFTMetadata(async (metadata) => {
           const params = new URLSearchParams(window.location.search);
           const data = params.get('data');
-          
-          // Recursively decode the 'data' parameter
-          const decodedData = await recursiveDecodeData(data);
+          const genTracker = { nextGeneration: 0 };
+          const decodedData = await recursiveDecodeData(data, genTracker);
           console.log("Deepest Decoded Data:", decodedData);
-        
+          
           if (decodedData) {
             try {
               const decodedJson = JSON.parse(decodedData);
@@ -370,17 +381,9 @@
                 if (decodedJson.image && decodedJson.image.startsWith("ipfs://")) {
                   metadata.image = decodedJson.image;
                 }
-                // Look for a generation attribute
-                let nextGeneration = 0;
-                if (decodedJson.attributes) {
-                  const generationAttr = decodedJson.attributes.find(attr => attr.trait_type === "Generation");
-                  if (generationAttr) {
-                    const prevGen = parseInt(generationAttr.value, 10);
-                    nextGeneration = isNaN(prevGen) ? 0 : prevGen + 1;
-                  }
-                }
+                // Use the tracked nextGeneration from all levels
                 metadata.attributes = metadata.attributes.filter(attr => attr.trait_type !== "Generation");
-                metadata.attributes.push({ trait_type: "Generation", value: nextGeneration });
+                metadata.attributes.push({ trait_type: "Generation", value: genTracker.nextGeneration });
               }
             } catch (e) {
               console.error("Failed to parse decoded 'data' parameter:", e);
