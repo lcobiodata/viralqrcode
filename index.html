@@ -319,20 +319,25 @@
       if (spinner) spinner.style.display = "none";
     }
 
-    // Helper: fetch latest HN story before a given timestamp
-    async function findLatestHNStoryBefore(timestamp) {
-      const storyIds = await fetch("https://hacker-news.firebaseio.com/v0/newstories.json").then(res => res.json());
-      let bestStory = null;
-      for (let id of storyIds) {
-        const item = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(res => res.json());
-        if (!item || !item.time || !item.url) continue;
-        if (item.time <= timestamp) {
-          if (!bestStory || item.time > bestStory.time) {
-            bestStory = item;
-          }
+     // Fetch latest Reddit story before a given timestamp (same day)
+    async function findLatestRedditStoryBefore(timestamp) {
+      const res = await fetch("https://www.reddit.com/r/news/new.json?limit=100");
+      const data = await res.json();
+      const targetDate = new Date(timestamp * 1000).toISOString().slice(0, 10);
+      let best = null;
+      for (const post of data.data.children) {
+        const postTime = post.data.created_utc;
+        const postDate = new Date(postTime * 1000).toISOString().slice(0, 10);
+        if (postDate !== targetDate) continue;
+        if (postTime <= timestamp) {
+          if (!best || postTime > best.data.created_utc) best = post;
         }
       }
-      return bestStory;
+      return best ? {
+        title: best.data.title,
+        url: "https://reddit.com" + best.data.permalink,
+        id: best.data.id
+      } : null;
     }
 
     // Function to generate the QR code
@@ -382,23 +387,19 @@
             }
           }
 
-          // --- Add HN story using the metadata timestamp ---
-          // Find the timestamp attribute (ISO string)
           const tsAttr = metadata.attributes.find(attr => attr.trait_type === "Timestamp");
-          let hnStory = null;
+          let redditStory = null;
           if (tsAttr && tsAttr.value) {
-            // Convert ISO string to Unix timestamp (seconds)
             const ts = Math.floor(new Date(tsAttr.value).getTime() / 1000);
-            hnStory = await findLatestHNStoryBefore(ts);
+            redditStory = await findLatestRedditStoryBefore(ts);
           }
-          if (hnStory) {
+          if (redditStory) {
             metadata.attributes.push(
-              { trait_type: "HN Story Title", value: hnStory.title },
-              { trait_type: "HN Story URL", value: hnStory.url },
-              { trait_type: "HN Story ID", value: hnStory.id }
+              { trait_type: "Reddit Story Title", value: redditStory.title },
+              { trait_type: "Reddit Story URL", value: redditStory.url },
+              { trait_type: "Reddit Story ID", value: redditStory.id }
             );
           }
-          // --- End HN story addition ---
 
           // Re-encode the decodedData as base58 for the external_url
           let parentJsonString = typeof decodedData === "string" ? decodedData : JSON.stringify(decodedData, null, 2);
