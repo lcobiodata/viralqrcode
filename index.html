@@ -148,30 +148,30 @@
           this.canvas.style.width = `${width}px`;
           this.canvas.style.height = `${height}px`;
 
+          // Only draw the shadow, not the colored QR code itself
           // Draw background color
           ctx.fillStyle = "#121212";
           ctx.fillRect(0, 0, width, height);
-
-          // Draw semi-transparent background image
-          ctx.globalAlpha = 0.25;
-          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Draw background image at full opacity
           ctx.globalAlpha = 1.0;
-
-          // Draw QR code on top using a temporary canvas
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Draw QR code shadow only
           const tempCanvas = document.createElement("canvas");
           tempCanvas.width = width;
           tempCanvas.height = height;
-
+          
           QRCode.toCanvas(tempCanvas, this.data, {
             ...this.options,
             width: width,
             color: {
-              dark: this.options.color?.dark || '#00FF0077',
-              light: '#00000000'
+              dark: "#000000bb", // semi-transparent black for shadow
+              light: "#00000000"
             }
           }, (err) => {
             if (err) {
-              // Instead of just logging, trigger fallback to minimal payload
+              // fallback as before
               console.warn("QR code too large or error occurred, falling back to rendering a QR code for the current URL instead.");
               QRCode.toCanvas(this.canvas, window.location.origin, {
                 margin: 2,
@@ -180,7 +180,12 @@
               hideSpinner();
               return;
             }
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.shadowColor = "#000";
+            ctx.shadowBlur = 16;
             ctx.drawImage(tempCanvas, 0, 0);
+            ctx.restore();
             if (callback) callback();
           });
         };
