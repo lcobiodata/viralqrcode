@@ -275,6 +275,8 @@
                 if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
                   genTracker.nextGeneration = gen + 1;
                 }
+              } else if (genTracker.nextGeneration < 1) {
+                genTracker.nextGeneration = 1;
               }
             }
             // ------------------------------------------
@@ -303,6 +305,7 @@
       console.log("Deepest Decoded Data:", decodedData);
       return decodedData;
     }
+
     // Spinner overlay helpers
     function showSpinner(msg = "Loading...") {
       let spinner = document.getElementById("spinner-overlay");
@@ -409,7 +412,7 @@
         buildNFTMetadata(async (metadata) => {
           const params = new URLSearchParams(window.location.search);
           const data = params.get('data');
-          const genTracker = { nextGeneration: 0 };
+          const genTracker = { nextGeneration: 1 };
           const decodedData = await recursiveDecodeData(data, genTracker);
           
           if (decodedData) {
