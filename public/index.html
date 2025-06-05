@@ -361,28 +361,15 @@
       const spinner = document.getElementById("spinner-overlay");
       if (spinner) spinner.style.display = "none";
     }
-
-     // Fetch latest Reddit story before a given timestamp (same day)
-    async function preventMandelaEffect(timestamp) {
-      const res = await fetch("https://www.reddit.com/r/news/new.json?limit=100");
+    
+    // Fetch latest time anchor before a given timestamp (same day)
+    async function fetchTimeAnchor(timestamp) {
+      const res = await fetch(`/api/server?endpoint=oracle&timestamp=${timestamp}`);
+      if (!res.ok) return null;
       const data = await res.json();
-      const targetDate = new Date(timestamp * 1000).toISOString().slice(0, 10);
-      let best = null;
-      for (const post of data.data.children) {
-        const postTime = post.data.created_utc;
-        const postDate = new Date(postTime * 1000).toISOString().slice(0, 10);
-        if (postDate !== targetDate) continue;
-        if (postTime <= timestamp) {
-          if (!best || postTime > best.data.created_utc) best = post;
-        }
-      }
-      return best ? {
-        title: best.data.title,
-        url: "https://reddit.com" + best.data.permalink,
-        id: best.data.id
-      } : null;
+      return data;
     }
-
+    
     async function encryptWithStringKey(password, plaintextBytes) {
       const encoder = new TextEncoder();
       const keyMaterial = encoder.encode(password);
@@ -453,15 +440,15 @@
           }
           
           const tsAttr = metadata.attributes.find(attr => attr.trait_type === "Timestamp");
-          let mandelaAnchor = null;
+          let timeAnchor = null;
           if (tsAttr && tsAttr.value) {
             const ts = Math.floor(new Date(tsAttr.value).getTime() / 1000);
-            mandelaAnchor = await preventMandelaEffect(ts);
+            timeAnchor = await fetchTimeAnchor(ts);
           }
-          if (mandelaAnchor) {
+          if (timeAnchor) {
             // Add Reddit story attributes as before
             metadata.attributes.push(
-              { trait_type: "Mandela Anchor", value: mandelaAnchor.title },
+              { trait_type: "Time Anchor", value: timeAnchor.title },
             );
             // --- Encrypt fingerprint attributes with Reddit Story ID as password ---
             const fingerprintTraits = [
@@ -491,7 +478,7 @@
             const encoder = new TextEncoder();
             const plaintextBytes = encoder.encode(plaintext);
             // Encrypt using Reddit Story ID
-            const encrypted = await encryptWithStringKey(mandelaAnchor.id, plaintextBytes);
+            const encrypted = await encryptWithStringKey(timeAnchor.id, plaintextBytes);
             // Add encrypted attributes to metadata
             metadata.attributes.push(
               { trait_type: "Cyphertext", value: JSON.stringify(encrypted.ciphertext) },
