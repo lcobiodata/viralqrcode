@@ -7,7 +7,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing timestamp" });
       }
       const url = "https://www.reddit.com/r/news/new.json?limit=100";
-      const redditRes = await fetch(url);
+      const redditRes = await fetch(url, {
+        headers: {
+          'User-Agent': 'oracle-bot/1.0 (https://viralqrcode.com)'
+        }
+      });
       if (!redditRes.ok) {
         return res.status(502).json({ error: "Failed to fetch anchor source" });
       }
