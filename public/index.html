@@ -18,6 +18,22 @@
       image-rendering: pixelated;
       border: none;
     }
+    #privacy-footer {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100vw;
+      text-align: center;
+      color: #00FF00;
+      font-family: monospace;
+      font-size: 1em;
+      background: none;
+      z-index: 100;
+      padding: 12px 0;
+    }
+    #privacy-footer a {
+      color: #00FF00;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/base-58@0.0.1/Base58.min.js"></script>
@@ -520,15 +536,52 @@
     }
 
     window.onload = () => {
-      console.log(`Privacy Notice:
-This system gathers the following details to create a unique QR code for your session:
-- Date, time, and time zone
-- Persistent kiosk ID (stored in browser)
-- Source URL
-- Approximate location (only if permitted)`
-      );
       generateQRCode();
     };
+  </script>
+  <div id="privacy-footer">
+    This site personalizes content locally using a short-lived fingerprint.
+    <a href="#" id="privacy-link" style="margin-left:6px;text-decoration:underline;">Learn more</a>
+    <div id="privacy-tooltip" style="display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:40px;max-width:480px;background:#222;color:#00FF00;padding:22px 22px 14px 22px;border-radius:10px;box-shadow:0 2px 16px #000;font-size:1em;z-index:9999;text-align:left;">
+      <h2 style="margin-top:0;font-size:1.2em;">Privacy Policy</h2>
+      <p><strong>Effective:</strong> <span id="privacy-today"></span></p>
+      <p>
+        This site temporarily generates an encrypted browser fingerprint to personalize the visual content you see (such as generating a unique QR code).
+        This fingerprint includes information such as your IP address, approximate location, timezone, and device type, but is immediately encrypted using a
+        one-time key that is never stored or reused.
+      </p>
+      <!--
+      <p>
+        The encrypted fingerprint is uploaded to a public, decentralized storage system (IPFS), but <strong>cannot be decrypted</strong> without internal
+        architectural knowledge and a temporary key that is discarded after use. No personal identifiers, cookies, or IP addresses are stored or logged by us.
+      </p>
+      -->
+      <p>
+        We do <strong>not track, profile, or identify</strong> you. We do not store any personal data. This fingerprint is used only during your active session,
+        is anonymized before publishing, and is not accessible by third parties in any meaningful way.
+      </p>
+      <p>
+        For questions or concerns, please contact the site operator.
+      </p>
+      <p><small>This notice was generated for informational purposes and reflects the current technical design.</small></p>
+    </div>
+  </div>
+  <script>
+    // Show/hide tooltip on click
+    const privacyLink = document.getElementById('privacy-link');
+    const privacyTooltip = document.getElementById('privacy-tooltip');
+    privacyLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      privacyTooltip.style.display = privacyTooltip.style.display === 'block' ? 'none' : 'block';
+    });
+    // Hide tooltip when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!privacyTooltip.contains(e.target) && e.target !== privacyLink) {
+        privacyTooltip.style.display = 'none';
+      }
+    });
+    // Set today's date in tooltip
+    document.getElementById("privacy-today").textContent = new Date().toISOString().split("T")[0];
   </script>
 </body>
 </html>
