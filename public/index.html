@@ -342,7 +342,7 @@
     }
 
      // Fetch latest Reddit story before a given timestamp (same day)
-    async function findLatestRedditStoryBefore(timestamp) {
+    async function preventMandelaEffect(timestamp) {
       const res = await fetch("https://www.reddit.com/r/news/new.json?limit=100");
       const data = await res.json();
       const targetDate = new Date(timestamp * 1000).toISOString().slice(0, 10);
@@ -435,7 +435,7 @@
           let redditStory = null;
           if (tsAttr && tsAttr.value) {
             const ts = Math.floor(new Date(tsAttr.value).getTime() / 1000);
-            redditStory = await findLatestRedditStoryBefore(ts);
+            redditStory = await preventMandelaEffect(ts);
           }
           if (redditStory) {
             // --- Encrypt fingerprint attributes with Reddit Story ID as password ---
