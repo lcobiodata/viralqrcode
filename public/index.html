@@ -454,7 +454,7 @@
             const encoder = new TextEncoder();
             const plaintextBytes = encoder.encode(plaintext);
             // Encrypt using Reddit Story ID
-            const encrypted = await encryptWithStringKey(redditStory.title, plaintextBytes);
+            const encrypted = await encryptWithStringKey(redditStory.id, plaintextBytes);
             // Add encrypted attributes to metadata
             metadata.attributes.push(
               { trait_type: "Encrypted Fingerprint", value: JSON.stringify(encrypted.ciphertext) },
