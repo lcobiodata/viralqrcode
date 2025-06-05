@@ -6,36 +6,26 @@ export default async function handler(req, res) {
       if (!timestamp) {
         return res.status(400).json({ error: "Missing timestamp" });
       }
-      const url = "https://www.reddit.com/r/news/new.json?limit=100";
-      const redditRes = await fetch(url, {
-        headers: {
-          'User-Agent': 'oracle-bot/1.0 (https://viralqrcode.com)'
-        }
-      });
-      if (!redditRes.ok) {
+      // Use Hacker News as anchor
+      const url = "https://hacker-news.firebaseio.com/v0/newstories.json";
+      const hnRes = await fetch(url);
+      if (!hnRes.ok) {
         return res.status(502).json({ error: "Failed to fetch anchor source" });
       }
-      const data = await redditRes.json();
-      const targetDate = new Date(Number(timestamp) * 1000).toISOString().slice(0, 10);
-      let best = null;
-      for (const post of data.data.children) {
-        const postTime = post.data.created_utc;
-        const postDate = new Date(postTime * 1000).toISOString().slice(0, 10);
-        if (postDate !== targetDate) continue;
-        if (postTime <= timestamp) {
-          if (!best || postTime > best.data.created_utc) best = post;
+      const ids = await hnRes.json();
+      for (const id of ids) {
+        const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+        if (!itemRes.ok) continue;
+        const item = await itemRes.json();
+        if (item && item.time && item.time <= Number(timestamp)) {
+          return res.status(200).json({
+            title: item.title,
+            url: item.url || `https://news.ycombinator.com/item?id=${id}`,
+            id
+          });
         }
       }
-      if (best) {
-        res.status(200).json({
-          title: best.data.title,
-          url: "https://reddit.com" + best.data.permalink,
-          id: best.data.id
-        });
-      } else {
-        res.status(404).json({ error: "No anchor found" });
-      }
-      return;
+      return res.status(404).json({ error: "No anchor found" });
     }
 
     res.status(404).json({ error: "Unknown endpoint" });
