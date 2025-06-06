@@ -25,11 +25,8 @@ export function buildNFTMetadata(callback) {
       external_url: window.location.origin,
       attributes: [
         { trait_type: "Kiosk ID", value: getKioskId() },
-        { trait_type: "Device Type", value: navigator.userAgent },
-        { trait_type: "Browser", value: navigator.appName },
-        { trait_type: "Platform", value: navigator.platform },
         { trait_type: "User Agent", value: navigator.userAgent },
-        { trait_type: "Language", value: navigator.language || navigator.userLanguage },
+        { trait_type: "Platform", value: navigator.platform },
         { trait_type: "Timestamp", value: new Date().toISOString() },
         { trait_type: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone },
         { trait_type: "Timezone Offset", value: (new Date().getTimezoneOffset() / -60) + " hours" },

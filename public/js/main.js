@@ -48,10 +48,17 @@ async function generateQRCode() {
       metadata.attributes.push({ trait_type: "Time Anchor", value: timeAnchor.title });
 
       const fingerprintTraits = [
-        "Kiosk ID", "Device Type", "Browser", "Platform", "User Agent",
-        "Language", "Timestamp", "Timezone", "Timezone Offset",
-        "Latitude", "Longitude", "Accuracy (m)"
+        "Kiosk ID",
+        "User Agent",
+        "Platform",
+        "Timestamp",
+        "Timezone",
+        "Timezone Offset",
+        "Latitude",
+        "Longitude",
+        "Accuracy (m)"
       ];
+
       const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
       metadata.attributes = metadata.attributes.filter(attr => !fingerprintTraits.includes(attr.trait_type));
 
