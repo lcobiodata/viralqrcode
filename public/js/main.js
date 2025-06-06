@@ -3,6 +3,7 @@ import { buildNFTMetadata } from './metadata.js';
 import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { recursiveDecodeData } from './utils/decode.js';
 import { fetchTimeAnchor } from './utils/fetch.js';
+import { generateOneTimeKey, showOneTimeKeyPopup } from './utils/oneTimeKey.js';
 import { encryptWithStringKey } from './utils/encrypt.js';
 import { QRCodeRenderer } from './qr/QRCodeRenderer.js';
 import { ImageBackgroundQRCodeRenderer } from './qr/ImageBackgroundQRCodeRenderer.js';
@@ -46,32 +47,38 @@ async function generateQRCode() {
 
     if (timeAnchor) {
       metadata.attributes.push({ trait_type: "Time Anchor", value: timeAnchor.title });
-
-      const fingerprintTraits = [
-        "Kiosk ID",
-        "User Agent",
-        "Platform",
-        "Timestamp",
-        "Timezone",
-        "Timezone Offset",
-        "Latitude",
-        "Longitude",
-        "Accuracy (m)"
-      ];
-
-      const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
-      metadata.attributes = metadata.attributes.filter(attr => !fingerprintTraits.includes(attr.trait_type));
-
-      const plaintext = JSON.stringify(fingerprintAttrs);
-      const plaintextBytes = new TextEncoder().encode(plaintext);
-      const encrypted = await encryptWithStringKey(timeAnchor.id, plaintextBytes);
-
-      metadata.attributes.push(
-        { trait_type: "Cyphertext", value: JSON.stringify(encrypted.ciphertext) },
-        { trait_type: "IV", value: JSON.stringify(encrypted.iv) },
-        { trait_type: "Salt", value: JSON.stringify(encrypted.salt) }
-      );
     }
+
+    const fingerprintTraits = [
+      "Kiosk ID",
+      "User Agent",
+      "Platform",
+      "Timestamp",
+      "Timezone",
+      "Timezone Offset",
+      "Latitude",
+      "Longitude",
+      "Accuracy (m)"
+    ];
+
+    const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
+    metadata.attributes = metadata.attributes.filter(attr => !fingerprintTraits.includes(attr.trait_type));
+
+    const plaintext = JSON.stringify(fingerprintAttrs);
+    const plaintextBytes = new TextEncoder().encode(plaintext);
+
+    // Generate one-time key and show popup
+    const oneTimeKey = generateOneTimeKey();
+    showOneTimeKeyPopup(oneTimeKey);
+
+    // Use the one-time key for encryption
+    const encrypted = await encryptWithStringKey(oneTimeKey, plaintextBytes);
+
+    metadata.attributes.push(
+      { trait_type: "Cyphertext", value: JSON.stringify(encrypted.ciphertext) },
+      { trait_type: "IV", value: JSON.stringify(encrypted.iv) },
+      { trait_type: "Salt", value: JSON.stringify(encrypted.salt) }
+    );
 
     console.log("Data To Be Encoded:", JSON.stringify(metadata, null, 2));
 
