@@ -106,7 +106,7 @@ async function generateQRCode() {
         });
 
     qr.render(() => {
-      canvas.onclick = () => qr.download();
+      canvas.onclick = () => qr.preview();
       hideSpinner();
     });
   });

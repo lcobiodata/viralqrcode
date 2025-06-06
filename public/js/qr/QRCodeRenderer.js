@@ -14,17 +14,28 @@ export class QRCodeRenderer {
     });
   }
 
-  async download() {
+  // async download() {
+  //   this.canvas.toBlob(async (blob) => {
+  //     if (blob) {
+  //       const buffer = await blob.arrayBuffer();
+  //       const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  //       const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  //       const link = document.createElement("a");
+  //       link.download = `viralqrcode-${hashHex}.png`;
+  //       link.href = URL.createObjectURL(blob);
+  //       link.click();
+  //       setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  //     }
+  //   }, "image/png");
+  // }
+
+  async preview() {
     this.canvas.toBlob(async (blob) => {
       if (blob) {
-        const buffer = await blob.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-        const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        const link = document.createElement("a");
-        link.download = `viralqrcode-${hashHex}.png`;
-        link.href = URL.createObjectURL(blob);
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener');
+        // Optionally revoke after some time to free memory
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
       }
     }, "image/png");
   }

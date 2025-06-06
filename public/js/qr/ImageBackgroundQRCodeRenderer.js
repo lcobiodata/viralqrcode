@@ -70,19 +70,50 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
         margin: 2,
         color: { dark: "#00FF00", light: "#121212" }
       }).render(() => {
-        this.canvas.onclick = () => this.download();
+        this.canvas.onclick = () => this.preview();
         if (callback) callback();
       });
     };
   }
 
-  async download() {
+  // async download() {
+  //   const width = this.canvas.width;
+  //   const height = this.canvas.height;
+  //   const tempCanvas = document.createElement("canvas");
+  //   tempCanvas.width = width;
+  //   tempCanvas.height = height;
+
+  //   QRCode.toCanvas(tempCanvas, this.data, {
+  //     ...this.options,
+  //     width: width,
+  //     color: { dark: "#00FF00", light: "#121212" }
+  //   }, async (err) => {
+  //     if (err) {
+  //       console.error(err);
+  //       return;
+  //     }
+  //     tempCanvas.toBlob(async (blob) => {
+  //       if (blob) {
+  //         const buffer = await blob.arrayBuffer();
+  //         const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  //         const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+  //         const link = document.createElement("a");
+  //         link.download = `viralqrcode-${hashHex}.png`;
+  //         link.href = URL.createObjectURL(blob);
+  //         link.click();
+  //         setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  //       }
+  //     }, "image/png");
+  //   });
+  // }
+
+  async preview() {
     const width = this.canvas.width;
     const height = this.canvas.height;
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = width;
     tempCanvas.height = height;
-
+  
     QRCode.toCanvas(tempCanvas, this.data, {
       ...this.options,
       width: width,
@@ -94,14 +125,9 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
       }
       tempCanvas.toBlob(async (blob) => {
         if (blob) {
-          const buffer = await blob.arrayBuffer();
-          const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-          const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-          const link = document.createElement("a");
-          link.download = `viralqrcode-${hashHex}.png`;
-          link.href = URL.createObjectURL(blob);
-          link.click();
-          setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+          const url = URL.createObjectURL(blob);
+          window.open(url, '_blank', 'noopener');
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
         }
       }, "image/png");
     });
