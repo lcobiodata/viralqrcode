@@ -2,7 +2,7 @@
 import { buildNFTMetadata } from './metadata.js';
 import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { recursiveDecodeData } from './utils/decode.js';
-import { fetchTimeAnchor } from './utils/fetch.js';
+import { fetchTimeAnchor, fetchIPInfo } from './utils/fetch.js';
 import { generateOneTimeKey, showOneTimeKeyPopup } from './utils/oneTimeKey.js';
 import { encryptWithStringKey } from './utils/encrypt.js';
 import { QRCodeRenderer } from './qr/QRCodeRenderer.js';
@@ -49,16 +49,43 @@ async function generateQRCode() {
       metadata.attributes.push({ trait_type: "Time Anchor", value: timeAnchor.title });
     }
 
+    // Fetch IP info and append to attributes
+    const ipInfo = await fetchIPInfo();
+    if (ipInfo) {
+      if (ipInfo.ip) metadata.attributes.push({ trait_type: "IP Address", value: ipInfo.ip });
+      if (ipInfo.city) metadata.attributes.push({ trait_type: "City (IP)", value: ipInfo.city });
+      if (ipInfo.country) metadata.attributes.push({ trait_type: "Country (IP)", value: ipInfo.country });
+      if (ipInfo.loc) {
+        const [lat, lon] = ipInfo.loc.split(',');
+        metadata.attributes.push({ trait_type: "Latitude (IP)", value: lat });
+        metadata.attributes.push({ trait_type: "Longitude (IP)", value: lon });
+      }
+    }
+
     const fingerprintTraits = [
+      // Identity
       "Kiosk ID",
-      "User Agent",
+
+      // Environment
       "Platform",
-      "Timestamp",
+      "User Agent",
       "Timezone",
       "Timezone Offset",
+
+      // Network
+      "IP Address",
+      "City (IP)",
+      "Country (IP)",
+
+      // Location
       "Latitude",
       "Longitude",
-      "Accuracy (m)"
+      "Accuracy (m)",
+      "Latitude (IP)",
+      "Longitude (IP)",
+
+      // Timing
+      "Timestamp"
     ];
 
     const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
@@ -105,37 +132,35 @@ async function generateQRCode() {
           color: { dark: "#00FF0077", light: "#00000000" }
         });
     
-        qr.render(() => {
-          canvas.onclick = () => qr.preview();
-          hideSpinner();
-    
-          // --- Place your toggle code here ---
-          let showDecoded = false;
-          let showEncoded = false;
-          const displayEl = document.getElementById("json-display");
-    
-          document.getElementById("toggle-decoded").onclick = () => {
-            showDecoded = !showDecoded;
-            showEncoded = false;
-            if (showDecoded) {
-              displayEl.textContent = decodedData || "No decoded data.";
-              displayEl.style.display = "block";
-            } else {
-              displayEl.style.display = "none";
-            }
-          };
-    
-          document.getElementById("toggle-encoded").onclick = () => {
-            showEncoded = !showEncoded;
-            showDecoded = false;
-            if (showEncoded) {
-              displayEl.textContent = JSON.stringify(metadata, null, 2);
-              displayEl.style.display = "block";
-            } else {
-              displayEl.style.display = "none";
-            }
-          };
-          // --- End toggle code ---
-        });
+    qr.render(() => {
+      canvas.onclick = () => qr.preview();
+      hideSpinner();
+
+      let showDecoded = false;
+      let showEncoded = false;
+      const displayEl = document.getElementById("json-display");
+
+      document.getElementById("toggle-decoded").onclick = () => {
+        showDecoded = !showDecoded;
+        showEncoded = false;
+        if (showDecoded) {
+          displayEl.textContent = decodedData || "No decoded data.";
+          displayEl.style.display = "block";
+        } else {
+          displayEl.style.display = "none";
+        }
+      };
+
+      document.getElementById("toggle-encoded").onclick = () => {
+        showEncoded = !showEncoded;
+        showDecoded = false;
+        if (showEncoded) {
+          displayEl.textContent = JSON.stringify(metadata, null, 2);
+          displayEl.style.display = "block";
+        } else {
+          displayEl.style.display = "none";
+        }
+      };
+    });
   });
 }
