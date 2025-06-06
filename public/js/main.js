@@ -1,0 +1,91 @@
+// main.js
+import { buildNFTMetadata } from './metadata.js';
+import { showSpinner, hideSpinner } from './utils/spinner.js';
+import { recursiveDecodeData } from './utils/decode.js';
+import { fetchTimeAnchor } from './utils/fetch.js';
+import { encryptWithStringKey } from './utils/encrypt.js';
+import { QRCodeRenderer } from './qr/QRCodeRenderer.js';
+import { ImageBackgroundQRCodeRenderer } from './qr/ImageBackgroundQRCodeRenderer.js';
+
+window.onload = () => {
+  generateQRCode();
+};
+
+async function generateQRCode() {
+  showSpinner("Generating QR Code...");
+  const canvas = document.getElementById("bitmap");
+  canvas.onclick = null;
+
+  buildNFTMetadata(async (metadata) => {
+    const params = new URLSearchParams(window.location.search);
+    const data = params.get('data');
+    const genTracker = { nextGeneration: 1 };
+    const decodedData = await recursiveDecodeData(data, genTracker);
+
+    if (decodedData) {
+      try {
+        const decodedJson = JSON.parse(decodedData);
+        if (decodedJson.image?.startsWith("ipfs://")) {
+          metadata.image = decodedJson.image;
+        }
+        metadata.attributes = metadata.attributes.filter(a => a.trait_type !== "Generation");
+        metadata.attributes.push({ trait_type: "Generation", value: genTracker.nextGeneration });
+      } catch (e) {
+        console.error("Invalid JSON in decoded data:", e);
+      }
+    }
+
+    const tsAttr = metadata.attributes.find(attr => attr.trait_type === "Timestamp");
+    let timeAnchor = null;
+    if (tsAttr?.value) {
+      const ts = Math.floor(new Date(tsAttr.value).getTime() / 1000);
+      timeAnchor = await fetchTimeAnchor(ts);
+    }
+
+    if (timeAnchor) {
+      metadata.attributes.push({ trait_type: "Time Anchor", value: timeAnchor.title });
+
+      const fingerprintTraits = [
+        "Kiosk ID", "Device Type", "Browser", "Platform", "User Agent",
+        "Language", "Timestamp", "Timezone", "Timezone Offset",
+        "Latitude", "Longitude", "Accuracy (m)"
+      ];
+      const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
+      metadata.attributes = metadata.attributes.filter(attr => !fingerprintTraits.includes(attr.trait_type));
+
+      const plaintext = JSON.stringify(fingerprintAttrs);
+      const plaintextBytes = new TextEncoder().encode(plaintext);
+      const encrypted = await encryptWithStringKey(timeAnchor.id, plaintextBytes);
+
+      metadata.attributes.push(
+        { trait_type: "Cyphertext", value: JSON.stringify(encrypted.ciphertext) },
+        { trait_type: "IV", value: JSON.stringify(encrypted.iv) },
+        { trait_type: "Salt", value: JSON.stringify(encrypted.salt) }
+      );
+    }
+
+    const jsonString = JSON.stringify(metadata, null, 2);
+    const compressed = pako.deflate(jsonString);
+    const base58 = Base58.encode(compressed);
+    const payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
+
+    let imageUrl = metadata.image?.startsWith("ipfs://")
+      ? metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/")
+      : null;
+
+    const qr = !imageUrl
+      ? new QRCodeRenderer(canvas, payload, {
+          margin: 2,
+          color: { dark: "#00FF00", light: "#121212" }
+        })
+      : new ImageBackgroundQRCodeRenderer(canvas, payload, imageUrl, {
+          margin: 2,
+          color: { dark: "#00FF0077", light: "#00000000" }
+        });
+
+    qr.render(() => {
+      canvas.onclick = () => qr.download();
+      hideSpinner();
+    });
+  });
+}
