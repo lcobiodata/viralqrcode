@@ -2,7 +2,7 @@
 import { buildNFTMetadata } from './metadata.js';
 import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { recursiveDecodeData } from './utils/decode.js';
-import { fetchTimeAnchor, fetchIPInfo } from './utils/fetch.js';
+import { fetchTimeAnchor } from './utils/fetch.js';
 import { generateOneTimeKey, showOneTimeKeyPopup } from './utils/oneTimeKey.js';
 import { encryptWithStringKey } from './utils/encrypt.js';
 import { QRCodeRenderer } from './qr/QRCodeRenderer.js';
@@ -47,19 +47,6 @@ async function generateQRCode() {
 
     if (timeAnchor) {
       metadata.attributes.push({ trait_type: "Time Anchor", value: timeAnchor.title });
-    }
-
-    // Fetch IP info and append to attributes
-    const ipInfo = await fetchIPInfo();
-    if (ipInfo) {
-      if (ipInfo.ip) metadata.attributes.push({ trait_type: "IP Address", value: ipInfo.ip });
-      if (ipInfo.city) metadata.attributes.push({ trait_type: "City (IP)", value: ipInfo.city });
-      if (ipInfo.country) metadata.attributes.push({ trait_type: "Country (IP)", value: ipInfo.country });
-      if (ipInfo.loc) {
-        const [lat, lon] = ipInfo.loc.split(',');
-        metadata.attributes.push({ trait_type: "Latitude (IP)", value: lat });
-        metadata.attributes.push({ trait_type: "Longitude (IP)", value: lon });
-      }
     }
 
     const fingerprintTraits = [

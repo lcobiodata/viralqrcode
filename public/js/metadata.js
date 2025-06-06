@@ -1,41 +1,62 @@
-// metadata.js
+import { fetchIPInfo } from './utils/fetch.js';
 
 export function buildNFTMetadata(callback) {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const location = {
           lat: +pos.coords.latitude.toFixed(4),
           lon: +pos.coords.longitude.toFixed(4),
           acc: Math.round(pos.coords.accuracy)
         };
-        callback(createMetadata(location));
+        const ipInfo = await fetchIPInfo(); // always include IP info
+        callback(createMetadata(location, ipInfo));
       },
-      () => callback(createMetadata({})),
+      async () => {
+        // If user denies location, fallback to IP-based location
+        const ipInfo = await fetchIPInfo();
+        callback(createMetadata({}, ipInfo));
+      },
       { maximumAge: 30000, timeout: 5000 }
     );
   } else {
-    callback(createMetadata({}));
+    // Geolocation not supported
+    fetchIPInfo().then(ipInfo => callback(createMetadata({}, ipInfo)));
   }
 
-  function createMetadata(location) {
+  function createMetadata(location, ipInfo = {}) {
+    const attributes = [
+      { trait_type: "Kiosk ID", value: getKioskId() },
+      { trait_type: "User Agent", value: navigator.userAgent },
+      { trait_type: "Platform", value: navigator.platform },
+      { trait_type: "Timestamp", value: new Date().toISOString() },
+      { trait_type: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone },
+      { trait_type: "Timezone Offset", value: (new Date().getTimezoneOffset() / -60) + " hours" },
+    ];
+
+    if (location.lat !== undefined) {
+      attributes.push(
+        { trait_type: "Latitude", value: location.lat },
+        { trait_type: "Longitude", value: location.lon },
+        { trait_type: "Accuracy (m)", value: location.acc }
+      );
+    } else if (ipInfo?.loc) {
+      const [lat, lon] = ipInfo.loc.split(',');
+      attributes.push(
+        { trait_type: "Latitude (IP)", value: +lat },
+        { trait_type: "Longitude (IP)", value: +lon }
+      );
+    }
+
+    if (ipInfo?.ip) attributes.push({ trait_type: "IP Address", value: ipInfo.ip });
+    if (ipInfo?.city) attributes.push({ trait_type: "City (IP)", value: ipInfo.city });
+    if (ipInfo?.country) attributes.push({ trait_type: "Country (IP)", value: ipInfo.country });
+
     return {
       name: "Anonymous browser fingerprint",
       description: "A unique, ephemeral browser fingerprint generated for this session.",
       external_url: window.location.origin,
-      attributes: [
-        { trait_type: "Kiosk ID", value: getKioskId() },
-        { trait_type: "User Agent", value: navigator.userAgent },
-        { trait_type: "Platform", value: navigator.platform },
-        { trait_type: "Timestamp", value: new Date().toISOString() },
-        { trait_type: "Timezone", value: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        { trait_type: "Timezone Offset", value: (new Date().getTimezoneOffset() / -60) + " hours" },
-        ...(location.lat !== undefined ? [
-          { trait_type: "Latitude", value: location.lat },
-          { trait_type: "Longitude", value: location.lon },
-          { trait_type: "Accuracy (m)", value: location.acc }
-        ] : [])
-      ]
+      attributes
     };
   }
 }
