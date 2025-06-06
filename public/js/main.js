@@ -90,9 +90,12 @@ async function generateQRCode() {
 
     const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
     metadata.attributes = metadata.attributes.filter(attr => !fingerprintTraits.includes(attr.trait_type));
-
+    
     const plaintext = JSON.stringify(fingerprintAttrs);
     const plaintextBytes = new TextEncoder().encode(plaintext);
+
+    // Add intermediate log before encryption
+    console.log("Data To Be Encrypted:", plaintext);
 
     // Generate one-time key and show popup
     const oneTimeKey = generateOneTimeKey();
