@@ -25,6 +25,8 @@ async function generateQRCode() {
     if (decodedData) {
       try {
         const decodedJson = JSON.parse(decodedData);
+        console.log("Current Decoded Data:", decodedData);
+
         if (decodedJson.image?.startsWith("ipfs://")) {
           metadata.image = decodedJson.image;
         }
@@ -64,14 +66,20 @@ async function generateQRCode() {
       );
     }
 
+    console.log("Data To Be Encoded:", JSON.stringify(metadata, null, 2));
+
     const jsonString = JSON.stringify(metadata, null, 2);
     const compressed = pako.deflate(jsonString);
     const base58 = Base58.encode(compressed);
     const payload = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
 
+    console.log("QR Code Data:", payload);
+
     let imageUrl = metadata.image?.startsWith("ipfs://")
       ? metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/")
       : null;
+
+    console.log("Image URL:", imageUrl);
 
     const qr = !imageUrl
       ? new QRCodeRenderer(canvas, payload, {
