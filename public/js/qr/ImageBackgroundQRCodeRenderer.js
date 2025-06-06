@@ -48,6 +48,7 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
         }
       }, (err) => {
         if (err) {
+          console.warn("QR code too large or error occurred, falling back to rendering a QR code for the current URL instead.");
           new QRCodeRenderer(this.canvas, window.location.origin, {
             margin: 2,
             color: { dark: "#00FF00", light: "#121212" }
