@@ -77,9 +77,15 @@ async function generateQRCode() {
 
     const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
 
-    // Add intermediate log before encryption
-    console.log("Data To Be Encrypted:", JSON.stringify(fingerprintAttrs, null, 2));
-
+    // Add intermediate log before encryption (pretty-printed, object style)
+    console.log("Data To Be Encrypted:", JSON.stringify({
+      name: metadata.name,
+      description: metadata.description,
+      external_url: metadata.external_url,
+      attributes: fingerprintAttrs,
+      image: metadata.image
+    }, null, 2));
+    
     metadata.attributes = metadata.attributes.filter(attr => !fingerprintTraits.includes(attr.trait_type));
     
     const plaintext = JSON.stringify(fingerprintAttrs);
