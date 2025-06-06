@@ -36,6 +36,12 @@ async function generateQRCode() {
       } catch (e) {
         console.error("Invalid JSON in decoded data:", e);
       }
+    } else {
+      // Add this block to ensure Generation is set to 1 if missing and no decoded data
+      const hasGeneration = metadata.attributes.some(a => a.trait_type === "Generation");
+      if (!hasGeneration) {
+        metadata.attributes.push({ trait_type: "Generation", value: 1 });
+      }
     }
 
     const tsAttr = metadata.attributes.find(attr => attr.trait_type === "Timestamp");
