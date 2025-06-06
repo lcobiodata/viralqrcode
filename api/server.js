@@ -7,26 +7,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing timestamp" });
       }
 
-      const idsUrl = process.env.ANCHOR_IDS_URL;
-      const itemBaseUrl = process.env.ANCHOR_ITEM_URL;
-      const fallbackBaseUrl = process.env.ANCHOR_FALLBACK_URL;
+      const idsUrl = process.env.ANCHOR_IDS_URL;           // e.g., https://blockstream.info/api/blocks
+      const itemBaseUrl = process.env.ANCHOR_ITEM_URL;     // e.g., https://blockstream.info/api/block/
+      const fallbackBaseUrl = process.env.ANCHOR_FALLBACK_URL; // e.g., https://blockstream.info/block/
 
       const anchorRes = await fetch(idsUrl);
       if (!anchorRes.ok) {
         return res.status(502).json({ error: "Failed to fetch anchor source" });
       }
 
-      const ids = await anchorRes.json();
-      for (const id of ids) {
-        const itemRes = await fetch(`${itemBaseUrl}${id}.json`);
-        if (!itemRes.ok) continue;
+      const blocks = await anchorRes.json();
+      for (const block of blocks) {
+        const blockId = block.id || block.hash;
+        const blockTime = block.timestamp || block.time;
 
-        const item = await itemRes.json();
-        if (item?.time <= Number(timestamp)) {
+        if (blockTime <= Number(timestamp)) {
           return res.status(200).json({
-            title: item.title,
-            url: item.url || `${fallbackBaseUrl}/item?id=${id}`,
-            id
+            title: `Bitcoin Block ${block.height}`,
+            url: `${fallbackBaseUrl}/${blockId}`,
+            id: blockId
           });
         }
       }
