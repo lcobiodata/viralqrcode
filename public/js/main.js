@@ -104,10 +104,38 @@ async function generateQRCode() {
           margin: 2,
           color: { dark: "#00FF0077", light: "#00000000" }
         });
-
-    qr.render(() => {
-      canvas.onclick = () => qr.preview();
-      hideSpinner();
-    });
+    
+        qr.render(() => {
+          canvas.onclick = () => qr.preview();
+          hideSpinner();
+    
+          // --- Place your toggle code here ---
+          let showDecoded = false;
+          let showEncoded = false;
+          const displayEl = document.getElementById("json-display");
+    
+          document.getElementById("toggle-decoded").onclick = () => {
+            showDecoded = !showDecoded;
+            showEncoded = false;
+            if (showDecoded) {
+              displayEl.textContent = decodedData || "No decoded data.";
+              displayEl.style.display = "block";
+            } else {
+              displayEl.style.display = "none";
+            }
+          };
+    
+          document.getElementById("toggle-encoded").onclick = () => {
+            showEncoded = !showEncoded;
+            showDecoded = false;
+            if (showEncoded) {
+              displayEl.textContent = JSON.stringify(metadata, null, 2);
+              displayEl.style.display = "block";
+            } else {
+              displayEl.style.display = "none";
+            }
+          };
+          // --- End toggle code ---
+        });
   });
 }
