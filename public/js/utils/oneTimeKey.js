@@ -43,7 +43,7 @@ export function showOneTimeKeyPopup(key) {
     </div>
     <div style="color:#ff0;font-size:0.95em;margin-bottom:16px;">
       <b>Warning:</b> This key will <b>not</b> be shown again.<br>
-      Copy and save it now. Without it, you cannot decrypt your data.
+      Copy and save it now. Without it, you cannot decrypt your data later.
     </div>
     <button id="close-popup-btn" style="background:#111;border:none;color:#00FF00;padding:8px 18px;border-radius:4px;cursor:pointer;font-size:1em;">Close</button>
   `;
