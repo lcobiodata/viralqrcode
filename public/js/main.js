@@ -79,6 +79,8 @@ async function generateQRCode() {
 
     // Add intermediate log before encryption (pretty-printed, object style)
     console.log("Data To Be Encrypted:", JSON.stringify({
+      // Add "..." to indicate this is a subset of the full metadata
+      "...": "...",
       attributes: fingerprintAttrs,
     }, null, 2));
     
