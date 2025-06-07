@@ -50,7 +50,13 @@ export default async function handler(req, res) {
       const apiKey = process.env.NFT_STORAGE_KEY;
       if (!apiKey) return res.status(500).json({ error: "Missing NFT_STORAGE_KEY" });
 
-      const uploadRes = await fetch(process.env.NFT_STORAGE_UPLOAD_URL, {
+      const uploadUrl = process.env.NFT_STORAGE_UPLOAD_URL;
+      if (!uploadUrl) {
+        return res.status(500).json({ error: "Missing NFT_STORAGE_UPLOAD_URL" });
+      }
+
+      const uploadRes = await fetch(uploadUrl, {
+
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
