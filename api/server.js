@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       return res.status(200).json(ipData);
     }
 
-    if (endpoint === "upload") {
+    if (endpoint === "upload" && req.method === "POST") {
       const nftStorageKey = process.env.NFT_STORAGE_KEY;
       const uploadUrl = process.env.NFT_STORAGE_UPLOAD_URL || "https://api.nft.storage/upload";
 
@@ -54,15 +54,15 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Missing NFT_STORAGE_KEY" });
       }
 
-      const json = await req.json();
+      const metadata = await req.json(); // ✅ Required for POST
 
       const uploadRes = await fetch(uploadUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${nftStorageKey}`, // ✅ VERY IMPORTANT
+          "Authorization": `Bearer ${nftStorageKey}`, // ✅ Important: Bearer prefix
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(json)
+        body: JSON.stringify(metadata)
       });
 
       const result = await uploadRes.json();
@@ -73,7 +73,6 @@ export default async function handler(req, res) {
       const cid = result?.value?.cid || result?.cid;
       return res.status(200).json({ cid });
     }
-
 
     res.status(404).json({ error: "Unknown endpoint" });
   } catch (err) {
