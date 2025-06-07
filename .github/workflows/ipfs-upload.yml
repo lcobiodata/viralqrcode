@@ -35,7 +35,14 @@ jobs:
         id: upload
         run: |
           set -e
-          CID=$(lighthouse-web3 upload metadata.json --apiKey "${{ secrets.LIGHTHOUSE_API_KEY }}" | grep -oE 'Qm[1-9A-HJ-NP-Za-km-z]{44,}' || echo "Upload failed")
+          if [[ ! -s metadata.json ]]; then
+            echo "Error: metadata.json is missing or empty"
+            exit 1
+          fi
+          # Try to upload and capture the full output for debugging
+          UPLOAD_OUTPUT=$(lighthouse-web3 upload metadata.json --apiKey "${{ secrets.LIGHTHOUSE_API_KEY }}" 2>&1)
+          echo "$UPLOAD_OUTPUT"
+          CID=$(echo "$UPLOAD_OUTPUT" | grep -oE 'Qm[1-9A-HJ-NP-Za-km-z]{44,}' || echo "Upload failed")
           if [[ "$CID" == "Upload failed" || -z "$CID" ]]; then
             echo "Error: Failed to upload metadata to IPFS"
             exit 1
