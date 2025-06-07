@@ -22,7 +22,7 @@ export async function uploadMetadataToIPFS(metadata) {
     }
 
     const { cid } = await res.json();
-    const gateway = process.env.NEXT_PUBLIC_IPFS_GATEWAY;
+    const gateway = "https://ipfs.io/ipfs"; // public gateway, hardcoded
     return `${gateway}/${cid}`;
   } catch (e) {
     console.error("Failed to upload metadata to IPFS:", e);
