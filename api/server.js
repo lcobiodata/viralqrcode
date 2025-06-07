@@ -47,32 +47,33 @@ export default async function handler(req, res) {
     }
 
     if (endpoint === "upload") {
-      const apiKey = process.env.NFT_STORAGE_KEY;
-      if (!apiKey) return res.status(500).json({ error: "Missing NFT_STORAGE_KEY" });
+      const nftStorageKey = process.env.NFT_STORAGE_KEY;
+      const uploadUrl = process.env.NFT_STORAGE_UPLOAD_URL || "https://api.nft.storage/upload";
 
-      const uploadUrl = process.env.NFT_STORAGE_UPLOAD_URL;
-      if (!uploadUrl) {
-        return res.status(500).json({ error: "Missing NFT_STORAGE_UPLOAD_URL" });
+      if (!nftStorageKey) {
+        return res.status(500).json({ error: "Missing NFT_STORAGE_KEY" });
       }
+
+      const json = await req.json();
 
       const uploadRes = await fetch(uploadUrl, {
-
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "Authorization": `Bearer ${nftStorageKey}`, // ✅ VERY IMPORTANT
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(req.body)
+        body: JSON.stringify(json)
       });
 
+      const result = await uploadRes.json();
       if (!uploadRes.ok) {
-        const text = await uploadRes.text();
-        return res.status(502).json({ error: "Upload failed", detail: text });
+        return res.status(502).json({ error: "Upload failed", detail: JSON.stringify(result) });
       }
 
-      const { value } = await uploadRes.json();
-      return res.status(200).json({ cid: value.cid });
+      const cid = result?.value?.cid || result?.cid;
+      return res.status(200).json({ cid });
     }
+
 
     res.status(404).json({ error: "Unknown endpoint" });
   } catch (err) {
