@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     if (endpoint === "upload") {
       const metadata = req.body;
 
-      const uploadUrl = process.env.NFT_STORAGE_UPLOAD_URL;
+      const uploadUrl = `https://api.nft.storage/upload`; // nft.storage upload endpoint'`;
       const token = process.env.NFT_STORAGE_KEY;
 
       const uploadRes = await fetch(uploadUrl, {
