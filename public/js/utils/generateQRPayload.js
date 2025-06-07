@@ -14,7 +14,7 @@ export function generateQRPayload(metadata) {
   const deflated = window.pako.deflate(jsonString);
   const encoded = window.Base58.encode(deflated);
 
-  console.log("QR Code Data (base58):", encoded);
+  console.log("QR Code Data:", `${window.location.origin}?data=${encoded}`);
 
   return encoded;
 
