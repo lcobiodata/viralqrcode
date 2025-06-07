@@ -1,31 +1,39 @@
 // utils/upload.js
 
 /**
- * Uploads metadata to IPFS via your serverless /api/server endpoint using nft.storage.
- * This avoids exposing the API key to the client and keeps the frontend payload small.
+ * Uploads metadata to IPFS using Lighthouse Storage via browser SDK (CDN).
+ * Lighthouse API key is injected via environment variable at build time.
  *
  * @param {Object} metadata - The JSON object to upload.
- * @returns {Promise<string|null>} - The resulting IPFS URL or null on failure.
+ * @returns {Promise<string|null>} - The resulting IPFS gateway URL or null on failure.
  */
 export async function uploadMetadataToIPFS(metadata) {
   try {
-    const res = await fetch('/api/server?endpoint=upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(metadata)
-    });
+    if (!window.lighthouse) {
+      throw new Error("Lighthouse SDK not found. Make sure it's loaded via CDN.");
+    }
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("Upload to IPFS failed:", errText);
+    const apiKey = import.meta.env.VITE_LIGHTHOUSE_API_KEY || process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
+
+    if (!apiKey) {
+      console.error("Missing Lighthouse API key. Define it as VITE_LIGHTHOUSE_API_KEY or NEXT_PUBLIC_LIGHTHOUSE_API_KEY.");
       return null;
     }
 
-    const { cid } = await res.json();
-    const gateway = "https://ipfs.io/ipfs"; // public gateway, hardcoded
-    return `${gateway}/${cid}`;
+    const blob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+    const file = new File([blob], 'metadata.json');
+
+    const response = await window.lighthouse.uploadBuffer(file, apiKey);
+
+    const cid = response?.data?.Hash;
+    if (!cid) {
+      console.error("Lighthouse upload failed:", response);
+      return null;
+    }
+
+    return `https://gateway.lighthouse.storage/ipfs/${cid}`;
   } catch (e) {
-    console.error("Failed to upload metadata to IPFS:", e);
+    console.error("Failed to upload metadata to IPFS via Lighthouse:", e);
     return null;
   }
 }

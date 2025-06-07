@@ -42,33 +42,38 @@ export default async function handler(req, res) {
     }
 
     if (endpoint === "upload") {
-      const apiKey = process.env.LIGHTHOUSE_API_KEY;
       const metadata = req.body;
 
-      // Lighthouse requires multipart/form-data for JSON upload
-      const form = new FormData();
-      form.append('file', Buffer.from(JSON.stringify(metadata)), {
-        filename: 'metadata.json',
-        contentType: 'application/json'
-      });
-
-      const uploadRes = await fetch('https://node.lighthouse.storage/api/v0/add', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          ...form.getHeaders()
-        },
-        body: form
-      });
-
-      const result = await uploadRes.json();
-
-      if (!uploadRes.ok || !result.Hash) {
-        return res.status(502).json({ error: "Upload failed", detail: result });
+      const token = process.env.LIGHTHOUSE_API_KEY;
+      if (!token) {
+        return res.status(500).json({ error: "Missing API key" });
       }
 
-      return res.status(200).json({ cid: result.Hash });
+      // Convert metadata to blob and FormData
+      const blob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
+      const formData = new FormData();
+      formData.append("file", blob, "metadata.json");
+
+      // Upload to Lighthouse
+      const uploadRes = await fetch("https://node.lighthouse.storage/api/v0/add", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.text();
+        return res.status(502).json({ error: "Upload failed", detail: err });
+      }
+
+      const result = await uploadRes.json();
+      const cid = result.Hash;
+
+      return res.status(200).json({ cid });
     }
+
 
     res.status(404).json({ error: "Unknown endpoint" });
   } catch (err) {
