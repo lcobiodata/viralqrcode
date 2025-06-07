@@ -14,7 +14,7 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
     img.src = this.imageUrl;
 
     img.onload = () => {
-      const maxCanvasSize = 512;
+      const maxCanvasSize = 256; // 256px max size
       const imgAspect = img.width / img.height;
       let width, height;
       if (imgAspect >= 1) {
