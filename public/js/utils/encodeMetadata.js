@@ -1,18 +1,23 @@
-// utils/encodeMetadata.js
-
 /**
- * Compresses and Base58-encodes metadata into a self-referring URL payload.
+ * Uploads metadata to IPFS using the backend upload endpoint,
+ * and returns a gateway-accessible URL suitable for QR encoding.
  *
  * @param {Object} metadata - Final metadata object.
- * @returns {string} - Encoded URL payload with compressed metadata.
+ * @returns {Promise<string|null>} - IPFS gateway URL or null on failure.
  */
-export function encodeMetadata(metadata) {
-  const jsonString = JSON.stringify(metadata, null, 2);
-  const compressed = pako.deflate(jsonString);
-  const base58 = Base58.encode(compressed);
-  const url = `${window.location.origin}?data=${encodeURIComponent(base58)}`;
+import { uploadMetadataToIPFS } from './upload.js';
 
+export async function encodeMetadata(metadata) {
+  const jsonString = JSON.stringify(metadata, null, 2);
   console.log("Data To Be Encoded:", jsonString);
+
+  const cid = await uploadMetadataToIPFS(metadata);
+  if (!cid) {
+    console.error("Failed to upload metadata to IPFS");
+    return null;
+  }
+
+  const url = `${window.location.origin}?cid=${cid}`;
   console.log("QR Code Data:", url);
 
   return url;

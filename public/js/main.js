@@ -22,7 +22,13 @@ async function generateQRCode() {
     const encryptedAttrs = await encryptFingerprint(metadata);
 
     metadata.attributes.push(...encryptedAttrs);
-    const payload = encodeMetadata(metadata);
+    const payload = await encodeMetadata(metadata);
+    if (!payload) {
+      alert("Failed to upload metadata.");
+      hideSpinner();
+      return;
+    }
+
     const imageUrl = resolveImageUrl(metadata.image);
 
     await renderQRCode(canvas, payload, imageUrl, decodedData);
