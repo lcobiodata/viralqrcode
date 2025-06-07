@@ -1,0 +1,39 @@
+name: Upload to IPFS
+
+on:
+  repository_dispatch:
+    types: [upload-to-ipfs]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install nft.storage CLI
+        run: npm install -g nft.storage
+
+      - name: Decode image
+        run: echo "${{ github.event.client_payload.data }}" | base64 -d > image.png
+
+      - name: Upload to IPFS
+        id: upload
+        run: |
+          CID=$(nft-storage store image.png --token "${{ secrets.LIGHTHOUSE_API_KEY }}" | grep -oE 'ipfs://[^"]+')
+          echo "cid=${CID}" >> $GITHUB_OUTPUT
+
+      - name: Write status file
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git pull origin main
+          mkdir -p status
+          echo "{
+            \"status\": \"done\",
+            \"cid\": \"${{ steps.upload.outputs.cid }}\",
+            \"timestamp\": \"$(date -u +'%Y-%m-%dT%H:%M:%SZ')\"
+          }" > status/${{ github.event.client_payload.id }}.json
+          git add status/${{ github.event.client_payload.id }}.json
+          git commit -m "Add status for ${{ github.event.client_payload.id }}"
+          git push origin main
