@@ -54,12 +54,12 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Missing NFT_STORAGE_KEY" });
       }
 
-      const metadata = await req.json(); // ✅ Required for POST
+      const metadata = req.body; // ✅ FIXED LINE
 
       const uploadRes = await fetch(uploadUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${nftStorageKey}`, // ✅ Important: Bearer prefix
+          "Authorization": `Bearer ${nftStorageKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(metadata)
