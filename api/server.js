@@ -46,6 +46,28 @@ export default async function handler(req, res) {
       return res.status(200).json(ipData);
     }
 
+    if (endpoint === "upload") {
+      const apiKey = process.env.NFT_STORAGE_KEY;
+      if (!apiKey) return res.status(500).json({ error: "Missing NFT_STORAGE_KEY" });
+
+      const uploadRes = await fetch(process.env.NFT_STORAGE_UPLOAD_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(req.body)
+      });
+
+      if (!uploadRes.ok) {
+        const text = await uploadRes.text();
+        return res.status(502).json({ error: "Upload failed", detail: text });
+      }
+
+      const { value } = await uploadRes.json();
+      return res.status(200).json({ cid: value.cid });
+    }
+
     res.status(404).json({ error: "Unknown endpoint" });
   } catch (err) {
     res.status(500).json({ error: err.message || "Internal Server Error" });
