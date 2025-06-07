@@ -1,5 +1,7 @@
-import lighthouse from '@lighthouse-web3/sdk';
-import crypto from 'crypto';
+// api/server.js
+
+// import lighthouse from '@lighthouse-web3/sdk';
+// import crypto from 'crypto';
 
 export default async function handler(req, res) {
   try {
@@ -42,33 +44,33 @@ export default async function handler(req, res) {
       return res.status(200).json(ipData);
     }
 
-    if (endpoint === "upload") {
-      const metadata = typeof req.body === "object" ? req.body : JSON.parse(req.body);
+    // if (endpoint === "upload") {
+    //   const metadata = typeof req.body === "object" ? req.body : JSON.parse(req.body);
 
-      const apiKey = process.env.LIGHTHOUSE_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "Missing API key" });
-      }
+    //   const apiKey = process.env.LIGHTHOUSE_API_KEY;
+    //   if (!apiKey) {
+    //     return res.status(500).json({ error: "Missing API key" });
+    //   }
 
-      // Compute SHA-256 hash of the content for the filename
-      const jsonString = JSON.stringify(metadata);
-      const hash = crypto.createHash('sha256').update(jsonString).digest('hex');
-      const fileName = `${hash}.json`;
+    //   // Compute SHA-256 hash of the content for the filename
+    //   const jsonString = JSON.stringify(metadata);
+    //   const hash = crypto.createHash('sha256').update(jsonString).digest('hex');
+    //   const fileName = `${hash}.json`;
 
-      // Upload using the SDK
-      const response = await lighthouse.uploadBuffer(
-        Buffer.from(jsonString),
-        fileName,
-        apiKey
-      );
+    //   // Upload using the SDK
+    //   const response = await lighthouse.uploadBuffer(
+    //     Buffer.from(jsonString),
+    //     fileName,
+    //     apiKey
+    //   );
 
-      const cid = response?.data?.Hash;
-      if (!cid) {
-        return res.status(502).json({ error: "Upload failed", detail: response });
-      }
+    //   const cid = response?.data?.Hash;
+    //   if (!cid) {
+    //     return res.status(502).json({ error: "Upload failed", detail: response });
+    //   }
 
-      return res.status(200).json({ cid, fileName });
-    }
+    //   return res.status(200).json({ cid, fileName });
+    // }
 
     res.status(404).json({ error: "Unknown endpoint" });
   } catch (err) {
