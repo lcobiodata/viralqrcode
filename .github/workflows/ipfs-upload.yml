@@ -22,10 +22,23 @@ jobs:
       - name: Decode image
         run: echo "${{ github.event.client_payload.data }}" | base64 -d > image.png
 
+      - name: Debug Image File
+        run: |
+          file image.png
+          ls -lh image.png
+
+      - name: Check Lighthouse CLI Version
+        run: lighthouse-web3 --version
+
       - name: Upload to IPFS (Lighthouse)
         id: upload
         run: |
-          CID=$(lighthouse-web3 upload image.png --apiKey "${{ secrets.LIGHTHOUSE_API_KEY }}" | grep -oE 'Qm[1-9A-HJ-NP-Za-km-z]{44,}')
+          set -e
+          CID=$(lighthouse-web3 upload image.png --apiKey "${{ secrets.LIGHTHOUSE_API_KEY }}" | grep -oE 'Qm[1-9A-HJ-NP-Za-km-z]{44,}' || echo "Upload failed")
+          if [[ "$CID" == "Upload failed" ]]; then
+            echo "Error: Failed to upload image to IPFS"
+            exit 1
+          fi
           echo "cid=${CID}" >> $GITHUB_OUTPUT
 
       - name: Write status file
