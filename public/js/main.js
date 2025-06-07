@@ -4,7 +4,7 @@ import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { decodeIncomingData } from './utils/decodeIncomingData.js';
 import { applyTimeAnchor } from './utils/applyTimeAnchor.js';
 import { encryptFingerprint } from './utils/encryptFingerprint.js';
-import { encodeMetadata } from './utils/encodeMetadata.js';
+import { generateQRPayload } from './utils/generateQRPayload.js';
 import { resolveImageUrl } from './utils/resolveImageUrl.js';
 import { renderQRCode } from './utils/renderQRCode.js';
 
@@ -22,7 +22,7 @@ async function generateQRCode() {
     const encryptedAttrs = await encryptFingerprint(metadata);
 
     metadata.attributes.push(...encryptedAttrs);
-    const payload = await encodeMetadata(metadata);
+    const payload = await generateQRPayload(metadata);
     if (!payload) {
       alert("Failed to upload metadata.");
       hideSpinner();

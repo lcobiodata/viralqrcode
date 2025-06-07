@@ -7,7 +7,7 @@
  */
 import { uploadMetadataToIPFS } from './upload.js';
 
-export async function encodeMetadata(metadata) {
+export async function generateQRPayload(metadata) {
   const jsonString = JSON.stringify(metadata, null, 2);
   console.log("Data To Be Encoded:", jsonString);
 
