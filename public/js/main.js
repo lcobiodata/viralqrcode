@@ -139,27 +139,27 @@ async function generateQRCode() {
       let showEncoded = false;
       const displayEl = document.getElementById("json-display");
 
-      document.getElementById("toggle-decoded").onclick = () => {
-        showDecoded = !showDecoded;
-        showEncoded = false;
-        if (showDecoded) {
-          displayEl.textContent = decodedData || "No decoded data.";
-          displayEl.style.display = "block";
-        } else {
-          displayEl.style.display = "none";
-        }
-      };
+      // document.getElementById("toggle-decoded").onclick = () => {
+      //   showDecoded = !showDecoded;
+      //   showEncoded = false;
+      //   if (showDecoded) {
+      //     displayEl.textContent = decodedData || "No decoded data.";
+      //     displayEl.style.display = "block";
+      //   } else {
+      //     displayEl.style.display = "none";
+      //   }
+      // };
 
-      document.getElementById("toggle-encoded").onclick = () => {
-        showEncoded = !showEncoded;
-        showDecoded = false;
-        if (showEncoded) {
-          displayEl.textContent = JSON.stringify(metadata, null, 2);
-          displayEl.style.display = "block";
-        } else {
-          displayEl.style.display = "none";
-        }
-      };
+      // document.getElementById("toggle-encoded").onclick = () => {
+      //   showEncoded = !showEncoded;
+      //   showDecoded = false;
+      //   if (showEncoded) {
+      //     displayEl.textContent = JSON.stringify(metadata, null, 2);
+      //     displayEl.style.display = "block";
+      //   } else {
+      //     displayEl.style.display = "none";
+      //   }
+      // };
     });
   });
 }
