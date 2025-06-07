@@ -11,16 +11,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install nft.storage CLI
-        run: npm install -g nft.storage
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Lighthouse CLI
+        run: npm install -g lighthouse-web3
 
       - name: Decode image
         run: echo "${{ github.event.client_payload.data }}" | base64 -d > image.png
 
-      - name: Upload to IPFS
+      - name: Upload to IPFS (Lighthouse)
         id: upload
         run: |
-          CID=$(nft-storage store image.png --token "${{ secrets.LIGHTHOUSE_API_KEY }}" | grep -oE 'ipfs://[^"]+')
+          CID=$(lighthouse-web3 upload image.png --apiKey "${{ secrets.LIGHTHOUSE_API_KEY }}" | grep -oE 'Qm[1-9A-HJ-NP-Za-km-z]{44,}')
           echo "cid=${CID}" >> $GITHUB_OUTPUT
 
       - name: Write status file
