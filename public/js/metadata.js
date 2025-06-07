@@ -40,17 +40,9 @@ export function buildNFTMetadata(callback) {
         { trait_type: "Longitude", value: location.lon },
         { trait_type: "Accuracy (m)", value: location.acc }
       );
-    } else if (ipInfo?.loc) {
-      const [lat, lon] = ipInfo.loc.split(',');
-      attributes.push(
-        { trait_type: "Latitude (IP)", value: +lat },
-        { trait_type: "Longitude (IP)", value: +lon }
-      );
     }
 
     if (ipInfo?.ip) attributes.push({ trait_type: "IP Address", value: ipInfo.ip });
-    if (ipInfo?.city) attributes.push({ trait_type: "City (IP)", value: ipInfo.city });
-    if (ipInfo?.country) attributes.push({ trait_type: "Country (IP)", value: ipInfo.country });
 
     return {
       name: "Anonymous browser fingerprint",

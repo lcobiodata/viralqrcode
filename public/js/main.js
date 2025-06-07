@@ -51,6 +51,7 @@ async function generateQRCode() {
       timeAnchor = await fetchTimeAnchor(ts);
     }
 
+    // Move timeAnchor attribute addition here, before filtering/encrypting
     if (timeAnchor) {
       metadata.attributes.push({ trait_type: "Time Anchor", value: timeAnchor.title });
     }
@@ -67,18 +68,15 @@ async function generateQRCode() {
 
       // Network
       "IP Address",
-      "City (IP)",
-      "Country (IP)",
 
       // Location
       "Latitude",
       "Longitude",
       "Accuracy (m)",
-      "Latitude (IP)",
-      "Longitude (IP)",
 
       // Timing
-      "Timestamp"
+      "Timestamp",
+      "Time Anchor"
     ];
 
     const fingerprintAttrs = metadata.attributes.filter(attr => fingerprintTraits.includes(attr.trait_type));
