@@ -45,7 +45,10 @@ export function showOneTimeKeyPopup(key) {
       <b>Warning:</b> This key will <b>not</b> be shown again.<br>
       Copy and save it now. Without it, you cannot decrypt your data later.
     </div>
-    <button id="close-popup-btn" style="background:#111;border:none;color:#00FF00;padding:8px 18px;border-radius:4px;cursor:pointer;font-size:1em;">Close</button>
+    <button id="close-popup-btn" title="Close"
+      style="background:#111;border:none;color:#00FF00;padding:8px 14px;border-radius:6px;cursor:pointer;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
   `;
 
   overlay.appendChild(popup);

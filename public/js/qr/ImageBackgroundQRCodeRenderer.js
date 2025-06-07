@@ -48,6 +48,10 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
         }
       }, (err) => {
         if (err) {
+          alert(
+            "The data is too large to fit in a QR code with background image. " +
+            "A fallback QR code with just the site link was generated instead."
+          );
           console.warn("QR code too large or error occurred, falling back to rendering a QR code for the current URL instead.");
           new QRCodeRenderer(this.canvas, window.location.origin, {
             margin: 2,
@@ -89,7 +93,16 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
       color: { dark: "#00FF00", light: "#121212" }
     }, async (err) => {
       if (err) {
+        alert(
+          "The data is too large to fit in a QR code with background image. " +
+          "A fallback QR code with just the site link was generated instead."
+        );
         console.error(err);
+        // fallback to plain QR code for the current domain
+        new QRCodeRenderer(this.canvas, window.location.origin, {
+          margin: 2,
+          color: { dark: "#00FF00", light: "#121212" }
+        }).render();
         return;
       }
       tempCanvas.toBlob(async (blob) => {

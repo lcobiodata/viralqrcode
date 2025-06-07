@@ -3,7 +3,7 @@ import { buildNFTMetadata } from './metadata.js';
 import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { decodeIncomingData } from './utils/decodeIncomingData.js';
 import { applyTimeAnchor } from './utils/applyTimeAnchor.js';
-import { encryptFingerprint } from './utils/encryptFingerprint.js';
+import { encryptMetadataAttributes } from './utils/encryptMetadataAttributes.js';
 import { generateQRPayload } from './utils/generateQRPayload.js';
 import { resolveImageUrl } from './utils/resolveImageUrl.js';
 import { renderQRCode } from './utils/renderQRCode.js';
@@ -19,7 +19,7 @@ async function generateQRCode() {
   buildNFTMetadata(async (metadata) => {
     const decodedData = await decodeIncomingData(metadata);
     await applyTimeAnchor(metadata);
-    const encryptedAttrs = await encryptFingerprint(metadata);
+    const encryptedAttrs = await encryptMetadataAttributes(metadata);
 
     metadata.attributes.push(...encryptedAttrs);
     const payload = await generateQRPayload(metadata);

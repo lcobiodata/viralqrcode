@@ -9,8 +9,25 @@ export class QRCodeRenderer {
 
   render(callback) {
     QRCode.toCanvas(this.canvas, this.data, this.options, (err) => {
-      if (err) console.error(err);
-      else if (callback) callback();
+      if (err) {
+        console.error(err);
+        // Fallback: try rendering just the current domain (or a minimal link)
+        const fallbackUrl = window.location.origin;
+        QRCode.toCanvas(this.canvas, fallbackUrl, this.options, (fallbackErr) => {
+          if (fallbackErr) {
+            console.error('Fallback QR code also failed:', fallbackErr);
+            if (callback) callback(fallbackErr);
+          } else {
+            alert(
+              "The data is too large to fit in a QR code. " +
+              "A fallback QR code with just the site link was generated instead."
+            );
+            if (callback) callback(null, true); // true = fallback used
+          }
+        });
+      } else if (callback) {
+        callback();
+      }
     });
   }
 
