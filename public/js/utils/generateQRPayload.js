@@ -13,10 +13,11 @@ export function generateQRPayload(metadata) {
   // Use global pako and Base58 from CDN
   const deflated = window.pako.deflate(jsonString);
   const encoded = window.Base58.encode(deflated);
-  payload = `${window.location.origin}?data=${encoded}`
+  const payload = `${window.location.origin}?data=${encoded}`;
   console.log("QR Code Data:", payload);
 
   return payload;
+
 
   // --- Upload logic (commented out) ---
   // import { uploadMetadataToIPFS } from './upload.js';
