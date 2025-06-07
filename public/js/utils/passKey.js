@@ -1,8 +1,8 @@
+// Suggestion for passKey.js or similar
+
 /**
- * Prompts the user to enter a decryption key using the same styling
- * as the one-time key popup.
- *
- * @returns {Promise<string|null>} - Resolves with the key or null if cancelled.
+ * Prompts the user for a decryption key in a styled modal with icon buttons.
+ * @returns {Promise<string|null>} Resolves with the key or null if cancelled.
  */
 export function promptForDecryptionKey() {
   return new Promise((resolve) => {
@@ -21,7 +21,7 @@ export function promptForDecryptionKey() {
     const popup = document.createElement('div');
     popup.style.background = '#222';
     popup.style.color = '#00FF00';
-    popup.style.padding = '28px 20px 20px 20px';
+    popup.style.padding = '28px 24px 20px 24px';
     popup.style.borderRadius = '12px';
     popup.style.fontFamily = 'monospace';
     popup.style.textAlign = 'center';
@@ -29,28 +29,46 @@ export function promptForDecryptionKey() {
     popup.style.boxShadow = '0 0 24px #000';
 
     popup.innerHTML = `
-      <div style="font-size:1.2em;margin-bottom:12px;">
+      <div style="font-size:1.1em;margin-bottom:14px;">
         <b>Enter Decryption Key</b>
       </div>
-      <input type="text" id="decrypt-key-input" placeholder="Paste key here" style="width:90%;padding:8px;font-family:monospace;font-size:1em;border-radius:6px;border:none;margin-bottom:16px;">
+      <input id="decrypt-key-input" type="password"
+        style="background:#111;color:#00FF00;border:1px solid #00FF00;padding:8px 12px;border-radius:6px;font-family:monospace;font-size:1em;width:80%;margin-bottom:18px;outline:none;"
+        autocomplete="off" autofocus />
       <div>
-        <button id="submit-decrypt-key" style="margin-right:10px;background:#111;border:none;color:#00FF00;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:1em;">Decrypt</button>
-        <button id="cancel-decrypt-key" style="background:#111;border:none;color:#f33;padding:8px 16px;border-radius:4px;cursor:pointer;font-size:1em;">Cancel</button>
+        <button id="decrypt-confirm-btn" title="Decrypt"
+          style="background:#111;border:none;color:#00FF00;padding:8px 14px;border-radius:6px;cursor:pointer;margin-right:16px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </button>
+        <button id="decrypt-cancel-btn" title="Cancel"
+          style="background:#111;border:none;color:#00FF00;padding:8px 14px;border-radius:6px;cursor:pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
     `;
 
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
-    popup.querySelector('#submit-decrypt-key').onclick = () => {
-      const key = popup.querySelector('#decrypt-key-input').value.trim();
+    const input = popup.querySelector('#decrypt-key-input');
+    input.focus();
+
+    // Confirm (Decrypt) button
+    popup.querySelector('#decrypt-confirm-btn').onclick = () => {
+      resolve(input.value);
       document.body.removeChild(overlay);
-      resolve(key || null);
     };
 
-    popup.querySelector('#cancel-decrypt-key').onclick = () => {
-      document.body.removeChild(overlay);
+    // Cancel button
+    popup.querySelector('#decrypt-cancel-btn').onclick = () => {
       resolve(null);
+      document.body.removeChild(overlay);
+    };
+
+    // Enter key submits, Escape cancels
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') popup.querySelector('#decrypt-confirm-btn').click();
+      if (e.key === 'Escape') popup.querySelector('#decrypt-cancel-btn').click();
     };
   });
 }

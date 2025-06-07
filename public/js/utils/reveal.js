@@ -56,7 +56,10 @@ export function revealDecryptedAttributes(attributes) {
         <button id="copy-reveal-popup" style="vertical-align:middle;background:#111;border:none;color:#00FF00;padding:6px 10px;border-radius:4px;cursor:pointer;margin-right:12px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><rect x="3" y="3" width="13" height="13" rx="2" stroke-width="2"/></svg>
         </button>
-        <button id="close-reveal-popup" style="background:#111;border:none;color:#00FF00;padding:8px 18px;border-radius:4px;cursor:pointer;font-size:1em;">Close</button>
+        <button id="close-reveal-popup" title="Close"
+          style="background:#111;border:none;color:#00FF00;padding:8px 14px;border-radius:6px;cursor:pointer;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
         <span id="copy-feedback" style="margin-left:16px;color:#00FF00;display:none;">Copied!</span>
       </div>
     `;
