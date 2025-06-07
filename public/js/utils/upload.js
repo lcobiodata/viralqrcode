@@ -1,39 +1,32 @@
 // utils/upload.js
 
 /**
- * Uploads metadata to IPFS using Lighthouse Storage via browser SDK (CDN).
- * Lighthouse API key is injected via environment variable at build time.
+ * Uploads metadata to IPFS by calling the backend upload endpoint.
+ * The backend handles the Lighthouse API key securely.
  *
  * @param {Object} metadata - The JSON object to upload.
- * @returns {Promise<string|null>} - The resulting IPFS gateway URL or null on failure.
+ * @returns {Promise<string|null>} - The resulting IPFS CID or null on failure.
  */
 export async function uploadMetadataToIPFS(metadata) {
   try {
-    if (!window.lighthouse) {
-      throw new Error("Lighthouse SDK not found. Make sure it's loaded via CDN.");
-    }
+    const res = await fetch('/api/server?endpoint=upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(metadata)
+    });
 
-    const apiKey = import.meta.env.VITE_LIGHTHOUSE_API_KEY || process.env.NEXT_PUBLIC_LIGHTHOUSE_API_KEY;
-
-    if (!apiKey) {
-      console.error("Missing Lighthouse API key. Define it as VITE_LIGHTHOUSE_API_KEY or NEXT_PUBLIC_LIGHTHOUSE_API_KEY.");
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("Upload failed:", err);
       return null;
     }
 
-    const blob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-    const file = new File([blob], 'metadata.json');
-
-    const response = await window.lighthouse.uploadBuffer(file, apiKey);
-
-    const cid = response?.data?.Hash;
-    if (!cid) {
-      console.error("Lighthouse upload failed:", response);
-      return null;
-    }
-
-    return `https://gateway.lighthouse.storage/ipfs/${cid}`;
+    const { cid } = await res.json();
+    return cid ? `https://gateway.lighthouse.storage/ipfs/${cid}` : null;
   } catch (e) {
-    console.error("Failed to upload metadata to IPFS via Lighthouse:", e);
+    console.error("Failed to upload metadata to IPFS:", e);
     return null;
   }
 }

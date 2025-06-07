@@ -1,4 +1,5 @@
-import FormData from 'form-data';
+import lighthouse from '@lighthouse-web3/sdk';
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
   try {
@@ -42,38 +43,32 @@ export default async function handler(req, res) {
     }
 
     if (endpoint === "upload") {
-      const metadata = req.body;
+      const metadata = typeof req.body === "object" ? req.body : JSON.parse(req.body);
 
-      const token = process.env.LIGHTHOUSE_API_KEY;
-      if (!token) {
+      const apiKey = process.env.LIGHTHOUSE_API_KEY;
+      if (!apiKey) {
         return res.status(500).json({ error: "Missing API key" });
       }
 
-      // Convert metadata to blob and FormData
-      const blob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-      const formData = new FormData();
-      formData.append("file", blob, "metadata.json");
+      // Compute SHA-256 hash of the content for the filename
+      const jsonString = JSON.stringify(metadata);
+      const hash = crypto.createHash('sha256').update(jsonString).digest('hex');
+      const fileName = `${hash}.json`;
 
-      // Upload to Lighthouse
-      const uploadRes = await fetch("https://node.lighthouse.storage/api/v0/add", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: formData
-      });
+      // Upload using the SDK
+      const response = await lighthouse.uploadBuffer(
+        Buffer.from(jsonString),
+        fileName,
+        apiKey
+      );
 
-      if (!uploadRes.ok) {
-        const err = await uploadRes.text();
-        return res.status(502).json({ error: "Upload failed", detail: err });
+      const cid = response?.data?.Hash;
+      if (!cid) {
+        return res.status(502).json({ error: "Upload failed", detail: response });
       }
 
-      const result = await uploadRes.json();
-      const cid = result.Hash;
-
-      return res.status(200).json({ cid });
+      return res.status(200).json({ cid, fileName });
     }
-
 
     res.status(404).json({ error: "Unknown endpoint" });
   } catch (err) {
