@@ -1,11 +1,15 @@
 /**
- * Capitalizes the first letter of a string and lowercases the rest.
- * @param {*} str 
- * @returns 
+ * Capitalizes the first letter of every word in a string and lowercases the rest.
+ * @param {string} str
+ * @returns {string}
  */
-
 export function capitalize(str) {
-  return str.length
-    ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-    : '';
+  return String(str)
+    .split(' ')
+    .map(word =>
+      word.length
+        ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        : ''
+    )
+    .join(' ');
 }
