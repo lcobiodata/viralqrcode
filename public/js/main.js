@@ -1,4 +1,17 @@
 // main.js
+// Early redirect if needed
+if (typeof window.ethereum !== "undefined") {
+  if (!window.location.search.includes('data=')) {
+    fetch('/api/hiddenData')
+      .then(res => res.json())
+      .then(obj => {
+        console.log("Fetched hidden data:", obj.data);
+        window.location.href = `${window.location.origin}/?data=${obj.data}`;
+      });
+  }
+}
+
+// ...rest of main.js...
 import { buildNFTMetadata } from './metadata.js';
 import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { decodeIncomingData } from './utils/decodeIncomingData.js';
