@@ -86,7 +86,7 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = width;
     tempCanvas.height = height;
-  
+
     QRCode.toCanvas(tempCanvas, this.data, {
       ...this.options,
       width: width,
@@ -107,6 +107,14 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
       }
       tempCanvas.toBlob(async (blob) => {
         if (blob) {
+          // --- SHA-256 hash for filename ---
+          const encoder = new TextEncoder();
+          const dataBuffer = encoder.encode(this.data);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          // ----------------------------------
+
           const url = URL.createObjectURL(blob);
           const win = window.open("", "_blank");
           if (!win) {
@@ -169,7 +177,7 @@ export class ImageBackgroundQRCodeRenderer extends QRCodeRenderer {
                   <button class="icon-btn" onclick="window.print()" title="Print">
                     <svg viewBox="0 0 24 24"><path d="M6 9V4h12v5h2V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v5h2zm12 2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h12zm0 2H6v7h12v-7zm-6 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg>
                   </button>
-                  <a id="download" href="${url}" download="viralqrcode.png" title="Download">
+                  <a id="download" href="${url}" download="${hashHex}.png" title="Download">
                     <button class="icon-btn">
                       <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zm7-18v12.17l3.59-3.58L17 13l-5 5-5-5 1.41-1.41L11 14.17V2h2z"/></svg>
                     </button>
