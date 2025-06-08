@@ -30,16 +30,25 @@ export async function decodeIncomingData(metadata) {
       console.log("Has Encrypted Attributes:", hasEncrypted);
 
       if (hasEncrypted) {
-        const password = await promptForDecryptionKey();
-        if (!password) {
-          throw new Error("Decryption cancelled by user.");
+        let decryptedAttributes = null;
+        let retrial = false;
+        while (true) {
+          const password = await promptForDecryptionKey(retrial);
+          if (!password) {
+            throw new Error("Decryption cancelled by user.");
+          }
+          const encryptedData = {
+            ciphertext: JSON.parse(json.attributes.find(attr => attr.trait_type === "Cyphertext").value),
+            iv: JSON.parse(json.attributes.find(attr => attr.trait_type === "IV").value),
+            salt: JSON.parse(json.attributes.find(attr => attr.trait_type === "Salt").value)
+          };
+          try {
+            decryptedAttributes = await decryptWithStringKey(password, encryptedData);
+            break; // success!
+          } catch (e) {
+            retrial = true;
+          }
         }
-        const encryptedData = {
-          ciphertext: JSON.parse(json.attributes.find(attr => attr.trait_type === "Cyphertext").value),
-          iv: JSON.parse(json.attributes.find(attr => attr.trait_type === "IV").value),
-          salt: JSON.parse(json.attributes.find(attr => attr.trait_type === "Salt").value)
-        };
-        const decryptedAttributes = await decryptWithStringKey(password, encryptedData);
         console.log("Decrypted Attributes:", decryptedAttributes);
         await revealDecryptedAttributes(decryptedAttributes);
 

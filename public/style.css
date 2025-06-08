@@ -1,3 +1,4 @@
+/* Base styles */
 body {
   display: flex;
   flex-direction: column;
@@ -24,6 +25,7 @@ canvas {
   box-sizing: border-box;
 }
 
+/* Tooltip */
 #qr-tooltip {
   position: absolute;
   top: 0;
@@ -42,6 +44,7 @@ canvas {
   z-index: 10;
 }
 
+/* Modal styles */
 #privacy-modal {
   display: flex;
   justify-content: center;
@@ -72,6 +75,12 @@ canvas {
   text-align: left;
 }
 
+/* Modal open state */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Privacy modal button */
 #accept-privacy {
   display: block;
   margin: 16px auto 0;
@@ -90,10 +99,36 @@ canvas {
   background-color: #66ff66;
 }
 
-body.modal-open {
-  overflow: hidden;
+/* Links */
+a {
+  color: #00FF00;
+  text-decoration: underline;
 }
 
+a:hover {
+  color: #66ff66;
+}
+
+/* Animations */
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* @keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  60% { transform: translateX(-10px); }
+  80% { transform: translateX(10px); }
+  100% { transform: translateX(0); }
+}
+.shake {
+  animation: shake 1.0s;
+} */
+
+/* Responsive styles */
 @media (max-width: 600px) {
   canvas {
     max-width: 90vw;
@@ -109,19 +144,4 @@ body.modal-open {
     font-size: 0.95em;
     padding: 8px 16px;
   }
-}
-
-@keyframes spin {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-a {
-  color: #00FF00;
-  text-decoration: underline;
-}
-
-a:hover {
-  color: #66ff66;
 }

@@ -2,9 +2,11 @@ import { generateKeyFromTraits } from './oneTimeKey.js';
 
 /**
  * Prompts the user for a decryption key or to recover it from traits.
+ * @param {boolean} retrial - If true, show an error message for invalid key.
+ * @param {boolean} cancelled - If true, show a message for cancelled decryption.
  * @returns {Promise<string|null>} Resolves with the key or null if cancelled.
  */
-export function promptForDecryptionKey() {
+export function promptForDecryptionKey(retrial = false, cancelled = false) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
     overlay.style.position = 'fixed';
@@ -33,6 +35,8 @@ export function promptForDecryptionKey() {
       <div style="font-size:1.1em;margin-bottom:14px;">
         <b>Enter Decryption Key</b>
       </div>
+      ${cancelled ? `<div class="key-cancel-msg" style="color:#ff0;margin-bottom:10px;">Decryption skipped, resetting QR code...</div>` : ''}
+      ${retrial && !cancelled ? `<div class="key-error-msg" style="color:#ff0;margin-bottom:10px;">Invalid key or traits. Please try again.</div>` : ''}
       <input id="decrypt-key-input" type="password"
         style="background:#111;color:#00FF00;border:1px solid #00FF00;padding:8px 12px;border-radius:6px;font-family:monospace;font-size:1em;width:80%;margin-bottom:18px;outline:none;"
         autocomplete="off" autofocus />
@@ -67,8 +71,20 @@ export function promptForDecryptionKey() {
 
     // Cancel button
     popup.querySelector('#decrypt-cancel-btn').onclick = () => {
-      resolve(null);
-      document.body.removeChild(overlay);
+      // Show cancelled message and close after a short delay
+      popup.querySelector('.key-error-msg')?.remove();
+      if (!popup.querySelector('.key-cancel-msg')) {
+        const cancelMsg = document.createElement('div');
+        cancelMsg.className = 'key-cancel-msg';
+        cancelMsg.style.color = '#ff0';
+        cancelMsg.style.marginBottom = '10px';
+        cancelMsg.textContent = 'Decryption skipped, resetting QR code...';
+        popup.insertBefore(cancelMsg, input);
+      }
+      setTimeout(() => {
+        resolve(null);
+        document.body.removeChild(overlay);
+      }, 2000);
     };
 
     // Enter key submits, Escape cancels
