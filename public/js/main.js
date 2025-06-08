@@ -8,8 +8,10 @@ import { generateQRPayload } from './utils/generateQRPayload.js';
 import { resolveImageUrl } from './utils/resolveImageUrl.js';
 import { renderQRCode } from './utils/renderQRCode.js';
 
-// Start QR code generation on window load
-window.onload = () => generateQRCode();
+// Called only after modal is dismissed
+export function startApp() {
+  generateQRCode();
+}
 
 async function generateQRCode() {
   showSpinner("Generating QR Code...");
@@ -30,7 +32,6 @@ async function generateQRCode() {
     }
 
     const imageUrl = resolveImageUrl(metadata.image);
-
     await renderQRCode(canvas, payload, imageUrl, decodedData);
   });
 }

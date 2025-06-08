@@ -24,44 +24,74 @@ canvas {
   box-sizing: border-box;
 }
 
-#privacy-footer {
+#qr-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -100%);
+  background: #222;
+  color: #00FF00;
+  font-family: monospace;
+  font-size: 0.9em;
+  padding: 6px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+#privacy-modal {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
   position: fixed;
   left: 0;
-  bottom: 0;
-  width: 100%;
-  text-align: center;
-  color: #00FF00;
-  background: #121212;
-  z-index: 100;
-  padding: 12px 0;
-  font-size: 1em;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  box-sizing: border-box;
+  padding: 5vh 0 80px;
 }
 
-#privacy-footer a {
-  color: #00FF00;
-  text-decoration: underline;
-  word-break: break-word;
-}
-
-#privacy-tooltip {
-  display: none;
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 70px;
-  width: 90vw;
-  max-height: 75vh;
-  overflow-y: auto;
+.modal-content {
   background: #222;
   color: #00FF00;
   padding: 24px 16px;
   border-radius: 12px;
   box-shadow: 0 0 24px #000;
   font-size: 1em;
-  z-index: 9999;
-  text-align: left;
+  width: 90vw;
+  max-height: 75vh;
+  overflow-y: auto;
   font-family: monospace;
   box-sizing: border-box;
+  text-align: left;
+}
+
+#accept-privacy {
+  display: block;
+  margin: 16px auto 0;
+  padding: 10px 20px;
+  font-family: monospace;
+  font-size: 1em;
+  color: #121212;
+  background-color: #00FF00;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+#accept-privacy:hover {
+  background-color: #66ff66;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 @media (max-width: 600px) {
@@ -70,15 +100,14 @@ canvas {
     max-height: 60vh;
   }
 
-  #privacy-tooltip {
+  .modal-content {
     font-size: 0.95em;
     padding: 16px 12px;
-    bottom: 70px;
   }
 
-  #privacy-footer {
+  #accept-privacy {
     font-size: 0.95em;
-    padding: 8px 0;
+    padding: 8px 16px;
   }
 }
 
@@ -86,4 +115,13 @@ canvas {
   100% {
     transform: rotate(360deg);
   }
+}
+
+a {
+  color: #00FF00;
+  text-decoration: underline;
+}
+
+a:hover {
+  color: #66ff66;
 }

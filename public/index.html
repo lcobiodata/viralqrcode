@@ -1,66 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Viral QR Code</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/base-58@0.0.1/Base58.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@lighthouse-web3/sdk/dist/index.umd.js"></script>
-  <script type="module" src="js/main.js" defer></script>
+  <script type="module">
+    import { startApp } from './js/main.js';
+
+    // Set date
+    document.getElementById("privacy-today").textContent = new Date().toISOString().split("T")[0];
+
+    // Dynamically insert GitHub issue URL
+    fetch('/api/githubPatchLink')
+      .then(res => res.json())
+      .then(data => {
+        if (data.url) {
+          document.getElementById('patch-link').href = data.url;
+          document.getElementById('patch-link').textContent = 'message via GitHub';
+        }
+      })
+      .catch(err => {
+        console.warn("Failed to load GitHub issue link:", err);
+        document.getElementById('patch-link').style.display = 'none';
+      });
+
+    document.body.classList.add("modal-open");
+
+    document.getElementById("accept-privacy").addEventListener("click", () => {
+      document.getElementById("privacy-modal").style.display = "none";
+      document.body.classList.remove("modal-open");
+
+      const canvas = document.getElementById("bitmap");
+      const tooltip = document.getElementById("qr-tooltip");
+
+      canvas.addEventListener("mouseenter", () => {
+        const rect = canvas.getBoundingClientRect();
+        tooltip.style.left = `${rect.left + rect.width / 2}px`;
+        tooltip.style.top = `${rect.top}px`;
+        tooltip.style.transform = 'translateX(-50%) translateY(-8px)';
+        tooltip.style.opacity = "1";
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+        tooltip.style.opacity = "0";
+      });
+
+      startApp();
+    });
+  </script>
 </head>
 <body>
   <canvas id="bitmap"></canvas>
-  <div id="privacy-footer">
-    <a href="#" id="privacy-link">Privacy Policy</a>
-    <div id="privacy-tooltip">
+  <div id="qr-tooltip">Click to Print/Download QR code</div>
+
+  <!-- Privacy Modal -->
+  <div id="privacy-modal">
+    <div class="modal-content">
       <h2>Privacy Notice</h2>
       <p><strong>Effective:</strong> <span id="privacy-today"></span></p>
-
       <p>
-        This site temporarily creates a unique, anonymous <strong>browser signature</strong> using device characteristics like current time, timezone, location, and IP address. This signature is used <strong>only</strong> to generate an ephemeral encryption key. These traits are processed locally, are <strong>never stored or transmitted</strong>, and are discarded immediately after use.
+        This site temporarily creates a unique, anonymous <strong>browser signature</strong> using a combination of device characteristics (like current time, timezone, and location) and network information (like IP address). This signature is used <strong>only</strong> to generate an ephemeral encryption key. These traits are processed locally, are <strong>never stored or transmitted</strong>, and are discarded immediately after use.
       </p>
-
       <p>
-        We store no personal information and do not profile, track, or identify users. The only data saved—locally in your browser—is limited to information you explicitly generate during your session, including:
-        <ul>
-          <li>URL query parameters</li>
-          <li>Current Bitcoin block ("Time Anchor")</li>
-          <li>Encrypted metadata generated through interactive features</li>
-        </ul>
-        This encrypted data may include inputs from certain hidden or playful elements ("easter eggs") you encounter.
+        We store no personal information and do not profile, track, or identify users. No personal data is stored or transmitted. All information is processed temporarily in the browser during the session. This includes:
       </p>
-
+      <ul>
+        <li>Parameters embedded in the current page URL</li>
+        <li>The current Bitcoin block height, retrieved in real time for anchoring purposes</li>
+        <li>Metadata attributes extracted from a previously scanned QR code (such as generation number)</li>
+      </ul>
       <p>
-        Some site features are intentionally concealed or triggered by specific interactions. While these may produce or modify encrypted data, no hidden feature ever collects personal information or sends any data to a server. Everything stays on your device.
+        This encrypted data may include inputs from certain hidden or playful elements ("easter eggs") encountered during use.
       </p>
-
       <p>
-        We believe privacy should be the default. If you have questions or discover something surprising, feel free to contact the site operator.
+        Some site features are intentionally concealed or triggered by specific interactions. While these may produce or modify encrypted data, no hidden feature ever collects personal information or sends any data to a server. Everything stays on the device.
       </p>
-
+      <p>
+        Privacy is treated as the default. For questions or concerns, contact the site operator by submitting a
+        <a id="patch-link" href="#" target="_blank" rel="noopener noreferrer">GitHub issue</a>.
+      </p>
       <p><small>This notice reflects the current technical design and data-handling behavior of this site.</small></p>
+      <button id="accept-privacy">I Understand</button>
     </div>
-
-
-  <script>
-    document.getElementById("privacy-link").addEventListener("click", (e) => {
-      e.preventDefault();
-      const tooltip = document.getElementById("privacy-tooltip");
-      tooltip.style.display = tooltip.style.display === "block" ? "none" : "block";
-    });
-
-    document.addEventListener("click", (e) => {
-      const tooltip = document.getElementById("privacy-tooltip");
-      const link = document.getElementById("privacy-link");
-      if (!tooltip.contains(e.target) && e.target !== link) {
-        tooltip.style.display = "none";
-      }
-    });
-
-    document.getElementById("privacy-today").textContent = new Date().toISOString().split("T")[0];
-  </script>
+  </div>
 </body>
 </html>
