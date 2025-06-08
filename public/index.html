@@ -14,18 +14,36 @@
 <body>
   <canvas id="bitmap"></canvas>
   <div id="privacy-footer">
-    * This site personalizes content locally using a short-lived fingerprint.
-    <a href="#" id="privacy-link">Learn more</a>
+    <a href="#" id="privacy-link">Privacy Policy</a>
     <div id="privacy-tooltip">
-      <h2>Privacy Policy</h2>
+      <h2>Privacy Notice</h2>
       <p><strong>Effective:</strong> <span id="privacy-today"></span></p>
-      <p>This site temporarily generates a browser fingerprint to personalize the visual content you see (such as generating a unique QR code). All fingerprint traits—including device type, timezone, IP address, and approximate location—are immediately encrypted using a one-time key that is never stored, transmitted, or reused.</p>
-      <p>No part of your fingerprint remains in plaintext. The encrypted data is processed entirely on your device and is only shared if you explicitly choose to publish it. Even then, it remains anonymized and unintelligible without your personal decryption key.</p>
-      <p>We do <strong>not track, profile, or identify</strong> you. We do not store any personal data. This fingerprint is used only during your active session, is encrypted by design, and is not accessible by third parties in any meaningful way.</p>
-      <p>For questions or concerns, please contact the site operator.</p>
-      <p><small>This notice was generated for informational purposes and reflects the current technical design.</small></p>
+
+      <p>
+        This site temporarily creates a unique, anonymous <strong>browser signature</strong> using device characteristics like current time, timezone, location, and IP address. This signature is used <strong>only</strong> to generate an ephemeral encryption key. These traits are processed locally, are <strong>never stored or transmitted</strong>, and are discarded immediately after use.
+      </p>
+
+      <p>
+        We store no personal information and do not profile, track, or identify users. The only data saved—locally in your browser—is limited to information you explicitly generate during your session, including:
+        <ul>
+          <li>URL query parameters</li>
+          <li>Current Bitcoin block ("Time Anchor")</li>
+          <li>Encrypted metadata generated through interactive features</li>
+        </ul>
+        This encrypted data may include inputs from certain hidden or playful elements ("easter eggs") you encounter.
+      </p>
+
+      <p>
+        Some site features are intentionally concealed or triggered by specific interactions. While these may produce or modify encrypted data, no hidden feature ever collects personal information or sends any data to a server. Everything stays on your device.
+      </p>
+
+      <p>
+        We believe privacy should be the default. If you have questions or discover something surprising, feel free to contact the site operator.
+      </p>
+
+      <p><small>This notice reflects the current technical design and data-handling behavior of this site.</small></p>
     </div>
-  </div>
+
 
   <script>
     document.getElementById("privacy-link").addEventListener("click", (e) => {
