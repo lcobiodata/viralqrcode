@@ -18,7 +18,7 @@ export function getQueryAttributes() {
 
     attrs.push({
       trait_type: capitalize(key),
-      value: capitalize(value)
+      value: value
     });
   }
 
