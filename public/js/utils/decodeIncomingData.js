@@ -20,7 +20,7 @@ export async function decodeIncomingData(metadata) {
   if (decodedData) {
     try {
       const json = JSON.parse(decodedData);
-      console.log("Current Decoded Data:", decodedData);
+      console.log("Current Decoded Data:", json);
 
       // Check for encrypted attributes in the decoded JSON, not metadata
       const hasEncrypted =

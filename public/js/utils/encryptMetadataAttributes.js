@@ -13,7 +13,7 @@ export async function encryptMetadataAttributes(metadata) {
   const attrsToEncrypt = metadata.attributes.filter(attr =>
     !["Timestamp", "Timezone", "Timezone Offset", "Latitude", "Longitude", "Accuracy (m)", "IP Address"].includes(attr.trait_type)
   );
-  console.log("Traits To Be Encrypted:", JSON.stringify({ attributes: attrsToEncrypt }, null, 2));
+  console.log("Traits To Be Encrypted:", { attributes: attrsToEncrypt });
 
   // Extract the 7 traits for key derivation, using empty string if missing
   const traitNames = [

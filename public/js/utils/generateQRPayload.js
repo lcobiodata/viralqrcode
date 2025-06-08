@@ -7,8 +7,9 @@
  * @returns {string} - Base58-encoded, deflated metadata string.
  */
 export function generateQRPayload(metadata) {
+  console.log("Data To Be Encoded:", metadata);
+  
   const jsonString = JSON.stringify(metadata, null, 2);
-  console.log("Data To Be Encoded:", jsonString);
 
   // Use global pako and Base58 from CDN
   const deflated = window.pako.deflate(jsonString);
