@@ -116,18 +116,6 @@ a:hover {
   }
 }
 
-/* @keyframes shake {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(-10px); }
-  40% { transform: translateX(10px); }
-  60% { transform: translateX(-10px); }
-  80% { transform: translateX(10px); }
-  100% { transform: translateX(0); }
-}
-.shake {
-  animation: shake 1.0s;
-} */
-
 /* Responsive styles */
 @media (max-width: 600px) {
   canvas {
@@ -143,5 +131,149 @@ a:hover {
   #accept-privacy {
     font-size: 0.95em;
     padding: 8px 16px;
+  }
+}
+
+/* --- Decryption & One-Time Key Modal Styles --- */
+
+/* Decryption Modal Overlay */
+.decryption-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Decryption Modal Popup */
+.decryption-popup {
+  background: #222;
+  color: #00FF00;
+  padding: 28px 24px 20px 24px;
+  border-radius: 12px;
+  font-family: monospace;
+  text-align: center;
+  max-width: 90vw;
+  box-shadow: 0 0 24px #000;
+}
+
+/* Decryption Input */
+.decryption-input {
+  background: #111;
+  color: #00FF00;
+  border: 1px solid #00FF00;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 1em;
+  width: 80%;
+  margin-bottom: 18px;
+  outline: none;
+}
+
+/* Decryption Buttons */
+.decryption-btn {
+  background: #111;
+  border: none;
+  color: #00FF00;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 16px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.decryption-btn:last-child {
+  margin-right: 0;
+}
+
+.decryption-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.decryption-btn.recover {
+  color: #0ff;
+  padding: 7px 14px;
+  margin-top: 18px;
+}
+
+/* Error and Cancel Messages */
+.key-error-msg, .key-cancel-msg {
+  color: #ff0;
+  margin-bottom: 10px;
+  font-size: 0.98em;
+}
+
+/* Trait Recovery Form */
+.traits-form {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.traits-form-row {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.traits-form-label {
+  color: #0ff;
+  display: inline-block;
+  width: 140px;
+  text-align: right;
+  margin-right: 8px;
+}
+
+.traits-form-input {
+  background: #111;
+  color: #00FF00;
+  border: 1px solid #00FF00;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-family: monospace;
+  width: 60%;
+}
+
+/* One-Time Key Popup Table */
+.one-time-key-table {
+  margin: 8px auto 0 auto;
+  text-align: left;
+  font-size: 0.98em;
+  border-collapse: collapse;
+}
+
+.one-time-key-table td {
+  padding: 4px 8px;
+  background: #111;
+  color: #00FF00;
+}
+
+/* Responsive for decryption/one-time-key modals */
+@media (max-width: 600px) {
+  .decryption-popup {
+    font-size: 0.95em;
+    padding: 16px 12px;
+  }
+  .decryption-input {
+    font-size: 0.95em;
+  }
+  .decryption-btn {
+    font-size: 0.95em;
+    padding: 7px 10px;
+  }
+  .traits-form-label {
+    width: 90px;
+    font-size: 0.95em;
+  }
+  .traits-form-input {
+    width: 90%;
+    font-size: 0.95em;
   }
 }

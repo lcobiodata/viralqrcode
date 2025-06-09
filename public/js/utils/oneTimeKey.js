@@ -1,5 +1,4 @@
 // oneTimeKey.js
-
 /**
  * Deterministically generates a key from selected traits using PBKDF2.
  * Handles missing traits by using empty strings for unavailable values.
@@ -36,36 +35,25 @@ export async function generateKeyFromTraits(traits) {
   return btoa(String.fromCharCode(...new Uint8Array(derivedBits)));
 }
 
-// Show popup with key, copy button, and warning, and show passphrase traits as a table
+/**
+ * Show popup with key, copy button, and warning, and show passphrase traits as a table.
+ * Uses CSS classes for styling.
+ * @param {string} key
+ * @param {Object} traits
+ */
 export function showOneTimeKeyPopup(key, traits) {
   const overlay = document.createElement('div');
-  overlay.style.position = 'fixed';
-  overlay.style.top = 0;
-  overlay.style.left = 0;
-  overlay.style.width = '100vw';
-  overlay.style.height = '100vh';
-  overlay.style.background = 'rgba(0,0,0,0.85)';
-  overlay.style.display = 'flex';
-  overlay.style.alignItems = 'center';
-  overlay.style.justifyContent = 'center';
-  overlay.style.zIndex = 9999;
+  overlay.className = 'decryption-overlay';
 
   const popup = document.createElement('div');
-  popup.style.background = '#222';
-  popup.style.color = '#00FF00';
-  popup.style.padding = '32px 24px 24px 24px';
-  popup.style.borderRadius = '12px';
-  popup.style.fontFamily = 'monospace';
-  popup.style.textAlign = 'center';
-  popup.style.maxWidth = '90vw';
-  popup.style.boxShadow = '0 0 24px #000';
+  popup.className = 'decryption-popup';
 
   // Build table rows for traits
   const traitRows = Object.entries(traits)
     .map(([type, value]) =>
       `<tr>
-        <td style="padding:2px 8px 2px 0;color:#0ff;">${type}</td>
-        <td style="padding:2px 0 2px 8px;background:#111;border-radius:4px;">${value || "<i style='color:#888'>(empty)</i>"}</td>
+        <td class="traits-form-label">${type}</td>
+        <td class="traits-form-input" style="background:#111;">${value || "<i style='color:#888'>(empty)</i>"}</td>
       </tr>`
     ).join("");
 
@@ -75,7 +63,7 @@ export function showOneTimeKeyPopup(key, traits) {
     </div>
     <div style="margin-bottom:12px;">
       <span style="word-break:break-all;user-select:all;" id="popup-key">${key}</span>
-      <button id="copy-key-btn" style="margin-left:8px;vertical-align:middle;background:#111;border:none;color:#00FF00;padding:6px 10px;border-radius:4px;cursor:pointer;">
+      <button id="copy-key-btn" class="decryption-btn" style="margin-left:8px;vertical-align:middle;">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><rect x="3" y="3" width="13" height="13" rx="2" stroke-width="2"/></svg>
       </button>
     </div>
@@ -85,13 +73,12 @@ export function showOneTimeKeyPopup(key, traits) {
         ${traitRows}
       </table>
     </div>
-    <div style="color:#ff0;font-size:0.95em;margin-bottom:16px;">
+    <div class="key-error-msg" style="color:#ff0;font-size:0.95em;margin-bottom:16px;">
       <b>Warning:</b> This key will <b>not</b> be shown again.<br>
       Please <b>copy the key</b> now, or make sure you <b>memorize or securely save all the traits above</b>.<br>
       You will need <b>either the key or the exact same traits</b> to decrypt your data later.
     </div>
-    <button id="close-popup-btn" title="Close"
-      style="background:#111;border:none;color:#00FF00;padding:8px 14px;border-radius:6px;cursor:pointer;">
+    <button id="close-popup-btn" title="Close" class="decryption-btn">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
   `;
