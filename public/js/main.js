@@ -39,7 +39,7 @@ async function generateQRCode() {
     metadata.attributes.push(...encryptedAttrs);
     const payload = await generateQRPayload(metadata);
     if (!payload) {
-      alert("Failed to upload metadata.");
+      lert("Failed to generate QR code.");
       hideSpinner();
       return;
     }
