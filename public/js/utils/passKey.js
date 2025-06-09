@@ -61,17 +61,28 @@ export function promptForDecryptionKey(retrial = false, cancelled = false) {
     document.body.appendChild(overlay);
 
     const input = popup.querySelector('#decrypt-key-input');
-    input.focus();
-
-    // Confirm (Decrypt) button
+    input.focus();    // Confirm (Decrypt) button
     popup.querySelector('#decrypt-confirm-btn').onclick = () => {
+      if (!input.value.trim()) {
+        // Show error if not already shown
+        if (!popup.querySelector('.key-error-msg')) {
+          const errorMsg = document.createElement('div');
+          errorMsg.className = 'key-error-msg';
+          errorMsg.style.color = '#ff0';
+          errorMsg.style.marginBottom = '10px';
+          errorMsg.textContent = 'Key cannot be empty. Please enter a key.';
+          popup.insertBefore(errorMsg, input);
+        }
+        input.focus();
+        return;
+      }
       resolve(input.value);
       document.body.removeChild(overlay);
     };
 
     // Cancel button
     popup.querySelector('#decrypt-cancel-btn').onclick = () => {
-      // Show cancelled message and close after a short delay
+      // Show cancelled message and close after a short delay, then redirect
       popup.querySelector('.key-error-msg')?.remove();
       if (!popup.querySelector('.key-cancel-msg')) {
         const cancelMsg = document.createElement('div');
@@ -84,6 +95,7 @@ export function promptForDecryptionKey(retrial = false, cancelled = false) {
       setTimeout(() => {
         resolve(null);
         document.body.removeChild(overlay);
+        window.location.href = window.location.origin;
       }, 2000);
     };
 

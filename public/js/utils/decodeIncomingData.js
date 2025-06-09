@@ -34,8 +34,15 @@ export async function decodeIncomingData(metadata) {
         let retrial = false;
         while (true) {
           const password = await promptForDecryptionKey(retrial);
+          if (password === null) {
+            // User clicked cancel
+            window.location.href = window.location.origin;
+            return null;
+          }
           if (!password) {
-            throw new Error("Decryption cancelled by user.");
+            // Empty password, prompt again
+            retrial = true;
+            continue;
           }
           const encryptedData = {
             ciphertext: JSON.parse(json.attributes.find(attr => attr.trait_type === "Cyphertext").value),
