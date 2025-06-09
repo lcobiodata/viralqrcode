@@ -405,4 +405,44 @@ a:hover {
     padding: 8px 6px;
     display: table-cell; /* <-- keep as table-cell */
   }
+  .decrypted-popup-inner {
+    padding: 12px 2vw 12px 2vw;
+    max-width: 98vw;
+    min-width: 0;
+    font-size: 0.97em;
+  }
+  .decrypted-metadata-table {
+    font-size: 0.95em;
+    width: 100%;
+    word-break: break-all;
+    display: block;
+    overflow-x: auto;
+  }
+  .decrypted-metadata-table th,
+  .decrypted-metadata-table td {
+    padding: 8px 6px;
+    font-size: 1em;
+    display: table-cell;
+  }
+  .popup-action-btn {
+    width: 44px;
+    height: 44px;
+    margin: 0 8px 0 0;
+    font-size: 1.2em;
+    padding: 0;
+    justify-content: center;
+  }
+  .popup-action-btn:last-child {
+    margin-right: 0;
+  }
+  .decrypted-popup-inner {
+    align-items: stretch;
+  }
+  .decrypted-popup-inner > div,
+  .decrypted-popup-inner > table {
+    width: 100%;
+  }
+  .decrypted-popup-inner > div[style*="margin-top"] {
+    margin-top: 12px !important;
+  }
 }
