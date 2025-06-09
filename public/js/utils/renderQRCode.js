@@ -9,9 +9,8 @@ import { ImageBackgroundQRCodeRenderer } from '../qr/ImageBackgroundQRCodeRender
  * @param {HTMLCanvasElement} canvas - Target canvas element.
  * @param {string} payload - URL-encoded payload.
  * @param {string|null} imageUrl - Optional background image.
- * @param {string|null} decodedData - Optional decoded ancestry.
  */
-export async function renderQRCode(canvas, payload, imageUrl, decodedData) {
+export async function renderQRCode(canvas, payload, imageUrl) {
   let qr;
 
   if (imageUrl) {
