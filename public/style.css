@@ -174,9 +174,10 @@ a:hover {
   border-radius: 6px;
   font-family: monospace;
   font-size: 1em;
-  width: 80%;
+  width: 100%;
   margin-bottom: 18px;
   outline: none;
+  box-sizing: border-box;
 }
 
 /* Decryption Buttons */
