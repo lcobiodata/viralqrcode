@@ -190,6 +190,7 @@ a:hover {
   cursor: pointer;
   margin-right: 16px;
   transition: background 0.2s, color 0.2s;
+  box-sizing: border-box;
 }
 
 .decryption-btn:last-child {
@@ -261,7 +262,62 @@ a:hover {
   color: #00FF00;
 }
 
-/* Responsive for decryption/one-time-key modals */
+/* --- Decrypted Metadata Table Styles --- */
+.decrypted-metadata-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 1em;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.decrypted-metadata-table th,
+.decrypted-metadata-table td {
+  padding: 8px 12px;
+  background: #111;
+  color: #00FF00;
+  border: 1px solid #333;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.popup-action-btn {
+  /* Inherit decryption-btn styles */
+  background: #111;
+  border: none;
+  color: #00FF00;
+  border-radius: 6px; /* match .decryption-btn */
+  cursor: pointer;
+  padding: 8px 14px;  /* match .decryption-btn */
+  font-family: monospace;
+  font-size: 1em;
+  margin-right: 16px;
+  transition: background 0.2s, color 0.2s;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;   /* remove fixed width/height for button look */
+  height: auto;
+}
+
+.popup-action-btn:last-child {
+  margin-right: 0;
+}
+
+.popup-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.popup-action-btn svg {
+  width: 1.2em;
+  height: 1.2em;
+  display: block;
+}
+
+/* Responsive for decryption/one-time-key/decrypted-metadata tables */
 @media (max-width: 600px) {
   .decryption-popup {
     font-size: 0.95em;
@@ -309,5 +365,15 @@ a:hover {
     word-break: break-all;
     display: block;
     overflow-x: auto;
+  }
+  .decrypted-metadata-table tr {
+    display: table-row; /* <-- keep as table-row */
+    width: auto;
+    flex-direction: unset;
+  }
+  .decrypted-metadata-table th,
+  .decrypted-metadata-table td {
+    padding: 8px 6px;
+    display: table-cell; /* <-- keep as table-cell */
   }
 }

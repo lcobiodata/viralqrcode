@@ -41,11 +41,11 @@ export function revealDecryptedAttributes(attributes) {
       <div style="font-size:1.2em;margin-bottom:12px;text-align:center;">
         <b>Decrypted Metadata</b>
       </div>
-      <table style="width:100%;border-collapse:collapse;text-align:left;font-size:0.95em;">
+      <table class="decrypted-metadata-table">
         <thead>
           <tr>
-            <th style="padding: 6px 12px; border: 1px solid #444;">Trait Type</th>
-            <th style="padding: 6px 12px; border: 1px solid #444;">Value</th>
+            <th>Trait Type</th>
+            <th>Value</th>
           </tr>
         </thead>
         <tbody>
@@ -53,12 +53,11 @@ export function revealDecryptedAttributes(attributes) {
         </tbody>
       </table>
       <div style="text-align:center;margin-top:16px;">
-        <button id="copy-reveal-popup" style="vertical-align:middle;background:#111;border:none;color:#00FF00;padding:6px 10px;border-radius:4px;cursor:pointer;margin-right:12px;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><rect x="3" y="3" width="13" height="13" rx="2" stroke-width="2"/></svg>
+        <button id="copy-reveal-popup" class="popup-action-btn" title="Copy">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><rect x="3" y="3" width="13" height="13" rx="2" stroke-width="2"/></svg>
         </button>
-        <button id="close-reveal-popup" title="Close"
-          style="background:#111;border:none;color:#00FF00;padding:8px 14px;border-radius:6px;cursor:pointer;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        <button id="close-reveal-popup" class="popup-action-btn" title="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <span id="copy-feedback" style="margin-left:16px;color:#00FF00;display:none;">Copied!</span>
       </div>
