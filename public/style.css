@@ -67,8 +67,8 @@ canvas {
   border-radius: 12px;
   box-shadow: 0 0 24px #000;
   font-size: 1em;
-  width: 60vw;         /* was 90vw */
-  max-width: 700px;    /* optional: prevents it from being too wide on big screens */
+  width: 90vw;
+  max-width: 700px;
   max-height: 75vh;
   overflow-y: auto;
   font-family: monospace;
