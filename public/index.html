@@ -158,18 +158,19 @@
       </div>
     </div>
   </template>
-    <template id="one-time-key-template">
+  <template id="one-time-key-template">
+    <!-- Use this as your template for the popup -->
     <div class="decryption-popup">
       <div style="font-size:1.2em;margin-bottom:16px;">
         <b>One-Time Encryption Key</b>
       </div>
       <div style="margin-bottom:12px;">
         <span style="word-break:break-all;user-select:all;" id="popup-key"></span>
-        <button id="copy-key-btn" class="decryption-btn" style="margin-left:8px;vertical-align:middle;">
+        <button id="copy-key-btn" class="decryption-btn" style="margin-left: 8px; vertical-align: middle;" disabled>
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" style="vertical-align:middle;" fill="none" viewBox="0 0 24 24" stroke="#00FF00"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><rect x="3" y="3" width="13" height="13" rx="2" stroke-width="2"/></svg>
         </button>
       </div>
-      <div style="color:#0ff;font-size:0.95em;margin-bottom:12px;">
+      <div class="one-time-key-traits">
         <b>Pass Phrase Traits:</b>
         <table id="traits-table" style="margin:8px auto 0 auto;text-align:left;font-size:0.98em;">
           <!-- rows injected by JS -->

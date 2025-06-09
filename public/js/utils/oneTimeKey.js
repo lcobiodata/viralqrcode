@@ -57,7 +57,7 @@ export function showOneTimeKeyPopup(key, traits) {
       .map(([type, value]) =>
         `<tr>
           <td class="traits-form-label">${type}</td>
-          <td class="traits-form-input" style="background:#111;">${value || "<i style='color:#888'>(empty)</i>"}</td>
+          <td class="traits-form-input" style="background:#111;">${value ? value : "<i style='color:#888'>(empty)</i>"}</td>
         </tr>`
       ).join("");
     popup.querySelector('#traits-table').innerHTML = traitRows;
