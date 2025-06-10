@@ -368,6 +368,14 @@ a:hover {
 
 #popup-key {
   color: #0ff;
+  background: #111;
+  border: 2px solid #00FF00;
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: monospace;
+  display: inline-block;
+  margin-bottom: 8px;
+  word-break: break-all;
 }
 
 /* --- Decrypted Metadata Table Styles --- */
