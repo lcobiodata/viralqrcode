@@ -1,4 +1,3 @@
-// utils/decodeIncomingData.js
 import { recursiveDecodeData } from './decode.js';
 import { promptForDecryptionKey } from './passKey.js';
 import { decryptWithStringKey } from './decrypt.js';
@@ -59,14 +58,6 @@ export async function decodeIncomingData(metadata) {
         console.log("Decrypted Attributes:", decryptedAttributes);
         await revealDecryptedAttributes(decryptedAttributes);
 
-        // Look for Generation in decryptedAttributes, not metadata.attributes
-        const genAttr = Array.isArray(decryptedAttributes)
-          ? decryptedAttributes.find(attr => attr.trait_type === "Generation")
-          : null;
-        if (genAttr) {
-          genTracker.nextGeneration = genAttr.value + 1;
-        }
-        // Remove encrypted attributes from metadata
         metadata.attributes = metadata.attributes.filter(attr =>
           attr.trait_type !== "Cyphertext" &&
           attr.trait_type !== "IV" &&
@@ -77,16 +68,14 @@ export async function decodeIncomingData(metadata) {
       if (json.image?.startsWith("ipfs://")) {
         metadata.image = json.image;
       }
-      // Only update Generation trait in metadata
-      metadata.attributes = metadata.attributes.filter(a => a.trait_type !== "Generation");
-      metadata.attributes.push({ trait_type: "Generation", value: genTracker.nextGeneration });
+
+      metadata.generation = genTracker.nextGeneration;
     } catch (e) {
       console.error("Invalid JSON in decoded data:", e);
     }
   } else {
-    const hasGen = metadata.attributes.some(a => a.trait_type === "Generation");
-    if (!hasGen) {
-      metadata.attributes.push({ trait_type: "Generation", value: 1 });
+    if (metadata.generation == null) {
+      metadata.generation = 1;
     }
   }
 

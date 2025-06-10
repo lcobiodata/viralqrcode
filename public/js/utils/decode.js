@@ -1,5 +1,11 @@
 // decode.js
 
+/* * This module provides a function to recursively decode Base58 encoded data,
+ * inflate it using pako, and parse it as JSON. It also tracks the next generation
+ * based on the decoded data.
+ *
+ * @module decode
+ */
 export async function recursiveDecodeData(dataParam, genTracker = { nextGeneration: 0 }) {
   let decodedData = null;
   let currentData = dataParam;
@@ -13,12 +19,9 @@ export async function recursiveDecodeData(dataParam, genTracker = { nextGenerati
 
       const json = JSON.parse(inflated);
       if (json && typeof json === "object") {
-        const generationAttr = json.attributes?.find(attr => attr.trait_type === "Generation");
-        if (generationAttr) {
-          const gen = parseInt(generationAttr.value, 10);
-          if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
-            genTracker.nextGeneration = gen + 1;
-          }
+        const gen = parseInt(json.generation, 10);
+        if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
+          genTracker.nextGeneration = gen + 1;
         } else if (genTracker.nextGeneration < 1) {
           genTracker.nextGeneration = 1;
         }
