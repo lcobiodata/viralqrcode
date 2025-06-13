@@ -13,15 +13,18 @@ import { revealDecryptedAttributes } from './reveal.js';
 export async function decodeIncomingData(metadata) {
   const params = new URLSearchParams(window.location.search);
   const encoded = params.get("data");
-  const genTracker = { nextGeneration: 1 };
-  const decodedData = await recursiveDecodeData(encoded, genTracker);
+
+  // Initialize generation to 0 before recursive decode
+  metadata.generation = 0;
+
+  const decodedData = await recursiveDecodeData(encoded, metadata);
 
   if (decodedData) {
     try {
       const json = JSON.parse(decodedData);
       console.log("Current Decoded Data:", json);
 
-      // Check for encrypted attributes in the decoded JSON, not metadata
+      // Check for encrypted attributes in the decoded JSON
       const hasEncrypted =
         ["Cyphertext", "IV", "Salt"].every(type =>
           (json.attributes || []).some(attr => attr.trait_type === type)
@@ -69,13 +72,10 @@ export async function decodeIncomingData(metadata) {
         metadata.image = json.image;
       }
 
-      metadata.generation = genTracker.nextGeneration;
+      // Ensure valid generation (redundant but harmless)
+      metadata.generation = Math.max(metadata.generation, 1);
     } catch (e) {
       console.error("Invalid JSON in decoded data:", e);
-    }
-  } else {
-    if (metadata.generation == null) {
-      metadata.generation = 1;
     }
   }
 

@@ -1,15 +1,15 @@
-// decode.js
-
-/* * This module provides a function to recursively decode Base58 encoded data,
- * inflate it using pako, and parse it as JSON. It also tracks the next generation
+/**
+ * This module provides a function to recursively decode Base58 encoded data,
+ * inflate it using pako, and parse it as JSON. It directly updates `metadata.generation`
  * based on the decoded data.
  *
  * @module decode
  */
-export async function recursiveDecodeData(dataParam, genTracker = { nextGeneration: 0 }) {
+export async function recursiveDecodeData(dataParam, metadata) {
   let decodedData = null;
   let currentData = dataParam;
   let depth = 0;
+  let maxGeneration = 0;
 
   while (currentData && depth < 10) {
     try {
@@ -20,13 +20,15 @@ export async function recursiveDecodeData(dataParam, genTracker = { nextGenerati
       const json = JSON.parse(inflated);
       if (json && typeof json === "object") {
         const gen = parseInt(json.generation, 10);
-        if (!isNaN(gen) && gen + 1 > genTracker.nextGeneration) {
-          genTracker.nextGeneration = gen + 1;
-        } else if (genTracker.nextGeneration < 1) {
-          genTracker.nextGeneration = 1;
+
+        if (!isNaN(gen)) {
+          maxGeneration = Math.max(maxGeneration, gen);
         }
 
-        const nextData = new URL(json.external_url, window.location.origin).searchParams.get('data');
+        const nextData = json.external_url
+          ? new URL(json.external_url, window.location.origin).searchParams.get('data')
+          : null;
+
         if (nextData && nextData !== currentData) {
           currentData = nextData;
           depth++;
@@ -42,5 +44,6 @@ export async function recursiveDecodeData(dataParam, genTracker = { nextGenerati
     }
   }
 
+  metadata.generation = Math.max(1, maxGeneration + 1);
   return decodedData;
 }
