@@ -515,7 +515,7 @@ a:hover {
     font-size: 0.95em;
     width: 100%;
     word-break: break-all;
-    display: block;
+    /* display: block; */
     overflow-x: auto;
   }
   .decrypted-metadata-table th,
