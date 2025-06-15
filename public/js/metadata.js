@@ -1,31 +1,33 @@
 // metadata.js
 import { fetchIPInfo } from './utils/fetch.js';
-import { getQueryAttributes } from './utils/getQueryAttributes.js';
 
-export function buildNFTMetadata(callback) {
-  const userAttributes = getQueryAttributes();
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const location = {
-          lat: +pos.coords.latitude.toFixed(4),
-          lon: +pos.coords.longitude.toFixed(4),
-          acc: Math.round(pos.coords.accuracy)
-        };
-        const ipInfo = await fetchIPInfo();
-        callback(createMetadata(location, ipInfo, userAttributes));
-      },
-      async () => {
-        const ipInfo = await fetchIPInfo();
-        callback(createMetadata({}, ipInfo, userAttributes));
-      },
-      { maximumAge: 30000, timeout: 5000 }
-    );
+export function buildNFTMetadata(callback, userAttributes = []) {
+  if (userAttributes.length > 0) {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const location = {
+            lat: +pos.coords.latitude.toFixed(4),
+            lon: +pos.coords.longitude.toFixed(4),
+            acc: Math.round(pos.coords.accuracy)
+          };
+          const ipInfo = await fetchIPInfo();
+          callback(createMetadata(location, ipInfo, userAttributes));
+        },
+        async () => {
+          const ipInfo = await fetchIPInfo();
+          callback(createMetadata({}, ipInfo, userAttributes));
+        },
+        { maximumAge: 30000, timeout: 5000 }
+      );
+    } else {
+      fetchIPInfo().then(ipInfo =>
+        callback(createMetadata({}, ipInfo, userAttributes))
+      );
+    }
   } else {
-    fetchIPInfo().then(ipInfo =>
-      callback(createMetadata({}, ipInfo, userAttributes))
-    );
+    // If no user attributes, just call back with minimal metadata (no IP/location)
+    callback(createMetadata({}, {}, userAttributes));
   }
 
   function createMetadata(location, ipInfo = {}, userAttributes = []) {

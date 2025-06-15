@@ -13,6 +13,7 @@ if (typeof window.ethereum !== "undefined") {
 
 // ...rest of main.js...
 import { buildNFTMetadata } from './metadata.js';
+import { getQueryAttributes } from './utils/getQueryAttributes.js';
 import { showSpinner, hideSpinner } from './utils/spinner.js';
 import { decodeIncomingData } from './utils/decodeIncomingData.js';
 import { applyTimeAnchor } from './utils/applyTimeAnchor.js';
@@ -30,21 +31,27 @@ async function generateQRCode() {
   showSpinner("Generating QR Code...");
   const canvas = document.getElementById("bitmap");
   canvas.onclick = null;
+  const userAttributes = getQueryAttributes();
 
   buildNFTMetadata(async (metadata) => {
     const decodedData = await decodeIncomingData(metadata);
-    await applyTimeAnchor(metadata);
+
+    // Only apply time anchor if there are user attributes
+    if (userAttributes.length > 0) {
+      await applyTimeAnchor(metadata);
+    }
+
     const encryptedAttrs = await encryptMetadataAttributes(metadata);
 
     metadata.attributes.push(...encryptedAttrs);
     const payload = await generateQRPayload(metadata);
     if (!payload) {
-      lert("Failed to generate QR code.");
+      alert("Failed to generate QR code.");
       hideSpinner();
       return;
     }
 
     const imageUrl = resolveImageUrl(metadata.image);
     await renderQRCode(canvas, payload, imageUrl, decodedData);
-  });
+  }, userAttributes);
 }
